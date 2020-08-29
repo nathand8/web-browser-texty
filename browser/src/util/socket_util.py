@@ -1,7 +1,7 @@
 import socket
 
 SOCKET_NEWLINE = "\r\n"
-SOCKET_ENCODING = "utf-8"
+SOCKET_ENCODING = "utf8"
 
 class EnhancedSocket:
 
@@ -15,6 +15,10 @@ class EnhancedSocket:
     # Connect to given host on given port
     def connect(self, host, port):
         self.s.connect((host, port))
+
+    # Close the soclet
+    def close(self):
+        self.s.close()
 
     # Takes a list of lines and sends them over the socket
     def sendLines(self, lines):

@@ -15,6 +15,10 @@ def test_splitURL_custom_port():
     assert(port == 8080)
     assert(path == "/index.html")
 
+def test_splitURL_empty_path():
+    protocol, host, port, path = splitURL("http://example.org/")
+    assert(path == "/")
+
 def test_splitURL_bad_protocol():
     with pytest.raises(AssertionError) as error:
         splitURL("https://example.org/index.html")
