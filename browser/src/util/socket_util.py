@@ -1,4 +1,4 @@
-import socket
+import socket, ssl
 
 SOCKET_NEWLINE = "\r\n"
 SOCKET_ENCODING = "utf8"
@@ -13,7 +13,10 @@ class EnhancedSocket:
         )
     
     # Connect to given host on given port
-    def connect(self, host, port):
+    def connect(self, host, port, encrypted = False):
+        if encrypted:
+            ctx = ssl.create_default_context()
+            self.s = ctx.wrap_socket(self.s, server_hostname=host)
         self.s.connect((host, port))
 
     # Close the soclet

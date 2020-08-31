@@ -4,9 +4,10 @@ from src.util.socket_util import *
 from src.util.http_util import *
 
 def request(url):
-    protocol, host, port, path = splitURL(url)
+    scheme, host, port, path = splitURL(url)
+    encrypted = scheme == "https"
     es = EnhancedSocket()
-    es.connect(host, port)
+    es.connect(host, port, encrypted=encrypted)
     es.sendLines([
         "GET {} HTTP/1.0".format(path),
         "Host: {}".format(host)
