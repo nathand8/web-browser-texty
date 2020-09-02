@@ -9,8 +9,10 @@ def request(url):
     es = EnhancedSocket()
     es.connect(host, port, encrypted=encrypted)
     es.sendLines([
-        "GET {} HTTP/1.0".format(path),
-        "Host: {}".format(host)
+        "GET {} HTTP/1.1".format(path),
+        "Host: {}".format(host),
+        "User-Agent: CS-6968-UofU",
+        "Connection: close"
     ])
     response = es.makefile()
     status, headers, html = parseHTTPResponse(response)
