@@ -1,6 +1,5 @@
-from src.util.url_util import *
 from src.util.socket_util import *
-from src.util.http_util import *
+from src.browser import *
 
 def test_example_org():
     scheme, host, port, path = splitURL("http://example.org/index.html")
@@ -28,3 +27,9 @@ def test_https_example_org():
     assert status == "200"
     assert "content-type" in headers.keys()
     assert "This domain is for use in illustrative examples in documents." in html
+
+def test_request_and_show():
+    headers, html = request("https://browser.engineering/draft/graphics.html")
+    assert "content-type" in headers.keys()
+    assert "Drawing to the Screen" in html
+    show(html)
