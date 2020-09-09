@@ -1,4 +1,6 @@
 from src.util.socket_util import *
+import tkinter
+import re
 
 # This should take a url and split it into the scheme, host, and path
 def splitURL(url):
@@ -65,10 +67,70 @@ def request(url):
     assert status == "200", "{}: {}".format(status, explanation)
     return headers, html
 
+# Get the body out of the html
+# If no body match is found, return all the html
+def getBody(html):
+    bodyRegex = r'<\s*body.*?>([\s\S]*)<\s*\/body\s?>'
+    bodyRegexMatch = re.search(bodyRegex, html, flags=re.MULTILINE)
+    if not bodyRegexMatch:
+        return html
+    return bodyRegexMatch.group()
+
 def show(html):
     print(stripTags(html))
+
+def lex(body):
+    return stripTags(body)
+
+
+# Constants for the layout
+WIDTH, HEIGHT = 800, 600
+HSTEP, VSTEP = 13, 18
+SCROLL_STEP = 40
+
+class Browser:
+    def __init__(self):
+        self.window = tkinter.Tk()
+        self.canvas = tkinter.Canvas(
+            self.window,
+            width=WIDTH,
+            height=HEIGHT
+        )
+        self.canvas.pack()
+        self.display_list = []
+        self.scroll = 0
+        self.window.bind("<Down>", self.scrolldown)
+    
+    def scrolldown(self, e):
+        self.scroll += SCROLL_STEP
+        print("scroll down", self.scroll)
+        self.render()
+    
+    def layout(self, text):
+        self.display_list = []
+        x, y = HSTEP, VSTEP
+        for c in text.strip():
+            self.display_list.append((x, y, c))
+            x += HSTEP
+            if x >= WIDTH - HSTEP:
+                y += VSTEP
+                x = HSTEP
+        self.render()
+    
+    def render(self):
+        self.canvas.delete("all")
+        for x, y, c in self.display_list:
+            if y > self.scroll + HEIGHT: continue
+            if y + VSTEP < self.scroll: continue
+            self.canvas.create_text(x, y - self.scroll, text=c)
+
 
 if __name__ == "__main__":
     import sys
     headers, html = request(sys.argv[1])
-    show(html)
+    displayText = lex(getBody(html))
+    show(displayText)
+
+    browser = Browser()
+    browser.layout(displayText)
+    tkinter.mainloop()

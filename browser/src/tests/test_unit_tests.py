@@ -74,3 +74,6 @@ def test_stripTags_example():
     assert stripTags("<html><body>Hello</body></html>") == "Hello"
     assert stripTags("<!doctype html><script> something </script>") == " something "
 
+# ========== Test getBody ===========
+def test_getBody_example():
+    assert getBody("<html><body>Some <div>elements</div> </body></html>") == "<body>Some <div>elements</div> </body>"
