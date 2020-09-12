@@ -103,12 +103,15 @@ class Browser:
         self.window.bind("<Configure>", self.windowresize)
         self.width = WIDTH
         self.height = HEIGHT
+        self.hstep = HSTEP
+        self.vstep = VSTEP
+        self.scroll_step = SCROLL_STEP
         self.text = ""
 
         # http://www.zggdwx.com/
     
     def scrolldown(self, e):
-        self.scroll += SCROLL_STEP
+        self.scroll += self.scroll_step
         print("scroll down", self.scroll)
         self.render()
     
@@ -120,20 +123,20 @@ class Browser:
     def layout(self, text):
         self.text = text
         self.display_list = []
-        x, y = HSTEP, VSTEP
+        x, y = self.hstep, self.vstep
         for c in text.strip():
             self.display_list.append((x, y, c))
-            x += HSTEP
-            if x >= self.width - HSTEP:
-                y += VSTEP
-                x = HSTEP
+            x += self.hstep
+            if x >= self.width - self.hstep:
+                y += self.vstep
+                x = self.hstep
         self.render()
     
     def render(self):
         self.canvas.delete("all")
         for x, y, c in self.display_list:
             if y > self.scroll + self.height: continue
-            if y + VSTEP < self.scroll: continue
+            if y + self.vstep < self.scroll: continue
             self.canvas.create_text(x, y - self.scroll, text=c)
 
 
