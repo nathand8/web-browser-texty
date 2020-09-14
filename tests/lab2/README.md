@@ -1,6 +1,6 @@
 Unit tests:
 - I've only added the new unit tests for lab 2 to this folder
-- Run "pytest -v browser/"
+- To run all unit tests, run "pytest -v browser/"
 
 Functional tests:
 - Run "python3 browser/src/browser.py http://www.zggdwx.com/xiyou/1.html"
