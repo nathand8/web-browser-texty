@@ -188,6 +188,14 @@ class Layout:
             self.weight = "bold"
         elif tok.tag.lower() == "/b":
             self.weight = "normal"
+        elif tok.tag.lower() == "small":
+            self.size -= 2
+        elif tok.tag.lower() == "/small":
+            self.size += 2
+        elif tok.tag.lower() == "big":
+            self.size += 4
+        elif tok.tag.lower() == "/big":
+            self.size -= 4
 
     def text(self, text):
         font = tkinter.font.Font(
