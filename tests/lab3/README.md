@@ -19,10 +19,12 @@ Spin up a Simple Web Server on port 8000 in the base of the repository using `py
 Run `python browser/src/browser.py http://localhost:8000/tests/lab3/bold_and_italics.html`
 - Ensure that the bolded text is bolded, italics in italics, and Both italics and bolded works
 - Ensure that the words "Normal" are back in the normal font
+- Make sure all the text shares the same baseline
 
 Run `python browser/src/browser.py http://localhost:8000/tests/lab3/font_sizes.html`
 - Check that the small text is smaller
 - Check that the big text is bigger
+- Make sure all the text shares the same baseline
 
 Run `python browser/src/browser.py http://localhost:8000/tests/lab3/newlines.html`
 - Ensure that newlines are created for "br" and "p" tags
