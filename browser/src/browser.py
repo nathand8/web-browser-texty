@@ -169,6 +169,7 @@ class Layout:
         self.display_list = []
         self.x = HSTEP
         self.y = VSTEP
+        self.line = []
         self.weight = "normal"
         self.style = "roman"
         self.size = 16
@@ -196,6 +197,11 @@ class Layout:
             self.size += 4
         elif tok.tag.lower() == "/big":
             self.size -= 4
+        elif tok.tag.lower() == "br":
+            self.flush()
+        elif tok.tag.lower() == "/p":
+            self.flush()
+            self.y += VSTEP
 
     def text(self, text):
         font = tkinter.font.Font(
@@ -206,10 +212,30 @@ class Layout:
         for word in text.split():
             w = font.measure(word)
             if self.x + w >= self.width - HSTEP:
-                self.y += font.metrics("linespace") * 1.2
-                self.x = HSTEP
-            self.display_list.append((self.x, self.y, word, font))
+                self.flush()
+            self.line.append((self.x, word, font))
             self.x += w + font.measure(" ")
+    
+    # Called when a new line is needed
+    def flush(self):
+        # Align words along the line
+        # Add all those words to the display list
+        # Update the x and y fields
+        if not self.line: return
+
+        metrics = [font.metrics() for x, word, font in self.line]
+        max_ascent = max([metric["ascent"] for metric in metrics])
+        baseline = self.y + 1.2 * max_ascent
+
+        for x, word, font in self.line:
+            y = baseline - font.metrics("ascent")
+            self.display_list.append((x, y, word, font))
+            print((x, y, word, font))
+        
+        self.x = HSTEP
+        self.line = []
+        max_descent = max([metric["descent"] for metric in metrics])
+        self.y = baseline + 1.2 * max_descent
 
 
 

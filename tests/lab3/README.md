@@ -23,3 +23,6 @@ Run `python browser/src/browser.py http://localhost:8000/tests/lab3/bold_and_ita
 Run `python browser/src/browser.py http://localhost:8000/tests/lab3/font_sizes.html`
 - Check that the small text is smaller
 - Check that the big text is bigger
+
+Run `python browser/src/browser.py http://localhost:8000/tests/lab3/newlines.html`
+- Ensure that newlines are created for "br" and "p" tags
