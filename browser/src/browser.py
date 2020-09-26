@@ -1,5 +1,6 @@
 from src.util.socket_util import *
 import tkinter
+import tkinter.font
 import re
 
 # This should take a url and split it into the scheme, host, and path
@@ -79,8 +80,34 @@ def getBody(html):
 def show(html):
     print(stripTags(html))
 
+class Text:
+    def __init__(self, text):
+        self.text = text
+
+class Tag:
+    def __init__(self, tag):
+        self.tag = tag
+
 def lex(body):
-    return stripTags(body)
+    # return stripTags(body)
+    out = []
+    text = ""
+    in_tag = False
+    for c in body:
+        if c == "<":
+            in_tag = True
+            if text: out.append(Text(text))
+            text = ""
+        elif c == ">":
+            in_tag = False
+            out.append(Tag(text))
+            text = ""
+        else:
+            text += c
+    if not in_tag and text:
+        out.append(Text(text))
+    return out
+
 
 
 # Constants for the layout
@@ -99,6 +126,7 @@ class Browser:
         self.canvas.pack(expand=True, fill="both")
         self.display_list = []
         self.scroll = 0
+        self.window.bind("<Up>", self.scrollup)
         self.window.bind("<Down>", self.scrolldown)
         self.window.bind("<Configure>", self.windowresize)
         self.width = WIDTH
@@ -106,45 +134,81 @@ class Browser:
         self.hstep = HSTEP
         self.vstep = VSTEP
         self.scroll_step = SCROLL_STEP
-        self.text = ""
+        self.tokens = []
 
         # http://www.zggdwx.com/
     
+    def scrollup(self, e):
+        self.scroll -= self.scroll_step
+        self.render()
+
     def scrolldown(self, e):
         self.scroll += self.scroll_step
-        print("scroll down", self.scroll)
         self.render()
     
     def windowresize(self, e):
         self.width = e.width
         self.height = e.height
-        self.layout(self.text)
+        self.layout(self.tokens)
     
-    def layout(self, text):
-        self.text = text
-        self.display_list = []
-        x, y = self.hstep, self.vstep
-        for c in text.strip():
-            self.display_list.append((x, y, c))
-            x += self.hstep
-            if x >= self.width - self.hstep:
-                y += self.vstep
-                x = self.hstep
+    def layout(self, tokens):
+        self.tokens = tokens
+        self.display_list = Layout(tokens, self.width, self.height).display_list
         self.render()
     
     def render(self):
         self.canvas.delete("all")
-        for x, y, c in self.display_list:
+        # self.canvas.create_text(200, 100, text="Hi!", font=self.font, anchor='nw')
+        for x, y, text, font in self.display_list:
             if y > self.scroll + self.height: continue
             if y + self.vstep < self.scroll: continue
-            self.canvas.create_text(x, y - self.scroll, text=c)
+            self.canvas.create_text(x, y - self.scroll, text=text, font=font, anchor='nw')
+
+class Layout:
+    def __init__(self, tokens, width=WIDTH, height=HEIGHT):
+        self.display_list = []
+        self.x = HSTEP
+        self.y = VSTEP
+        self.weight = "normal"
+        self.style = "roman"
+        self.size = 16
+        self.width = width
+        self.height = height
+        for tok in tokens:
+            self.token(tok)
+    
+    def token(self, tok):
+        if isinstance(tok, Text):
+            self.text(tok.text)
+        elif tok.tag.lower() == "i":
+            self.style = "italic"
+        elif tok.tag.lower() == "/i":
+            self.style = "roman"
+        elif tok.tag.lower() == "b":
+            self.weight = "bold"
+        elif tok.tag.lower() == "/b":
+            self.weight = "normal"
+
+    def text(self, text):
+        font = tkinter.font.Font(
+            size=self.size,
+            weight=self.weight,
+            slant=self.style,
+        )
+        for word in text.split():
+            w = font.measure(word)
+            if self.x + w >= self.width - HSTEP:
+                self.y += font.metrics("linespace") * 1.2
+                self.x = HSTEP
+            self.display_list.append((self.x, self.y, word, font))
+            self.x += w + font.measure(" ")
+
 
 
 if __name__ == "__main__":
     import sys
     headers, html = request(sys.argv[1])
     displayText = lex(getBody(html))
-    show(displayText)
 
     browser = Browser()
     browser.layout(displayText)
