@@ -177,6 +177,7 @@ class Layout:
         self.height = height
         for tok in tokens:
             self.token(tok)
+        self.flush()
     
     def token(self, tok):
         if isinstance(tok, Text):
@@ -230,7 +231,6 @@ class Layout:
         for x, word, font in self.line:
             y = baseline - font.metrics("ascent")
             self.display_list.append((x, y, word, font))
-            print((x, y, word, font))
         
         self.x = HSTEP
         self.line = []
