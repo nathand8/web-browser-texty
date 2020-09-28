@@ -85,8 +85,19 @@ class Text:
         self.text = text
 
 class Tag:
-    def __init__(self, tag):
-        self.tag = tag
+    def __init__(self, text):
+        parts = text.split()
+        self.tag = parts[0].lower()
+        self.attributes = {}
+        for attrpair in parts[1:]:
+            if "=" in attrpair:
+                key, value = attrpair.split("=", 1)
+                if len(value) > 2 and value[0] in ["'", "\""]:
+                    value = value[1:-1]
+                self.attributes[key.lower()] = value
+            else:
+                self.attributes[attrpair.lower()] = ""
+
 
 def lex(body):
     # return stripTags(body)
@@ -107,8 +118,6 @@ def lex(body):
     if not in_tag and text:
         out.append(Text(text))
     return out
-
-
 
 # Constants for the layout
 WIDTH, HEIGHT = 800, 600
@@ -182,25 +191,25 @@ class Layout:
     def token(self, tok):
         if isinstance(tok, Text):
             self.text(tok.text)
-        elif tok.tag.lower() == "i":
+        elif tok.tag == "i":
             self.style = "italic"
-        elif tok.tag.lower() == "/i":
+        elif tok.tag == "/i":
             self.style = "roman"
-        elif tok.tag.lower() == "b":
+        elif tok.tag == "b":
             self.weight = "bold"
-        elif tok.tag.lower() == "/b":
+        elif tok.tag == "/b":
             self.weight = "normal"
-        elif tok.tag.lower() == "small":
+        elif tok.tag == "small":
             self.size -= 2
-        elif tok.tag.lower() == "/small":
+        elif tok.tag == "/small":
             self.size += 2
-        elif tok.tag.lower() == "big":
+        elif tok.tag == "big":
             self.size += 4
-        elif tok.tag.lower() == "/big":
+        elif tok.tag == "/big":
             self.size -= 4
-        elif tok.tag.lower() == "br":
+        elif tok.tag == "br":
             self.flush()
-        elif tok.tag.lower() == "/p":
+        elif tok.tag == "/p":
             self.flush()
             self.y += VSTEP
 
@@ -237,13 +246,57 @@ class Layout:
         max_descent = max([metric["descent"] for metric in metrics])
         self.y = baseline + 1.2 * max_descent
 
+SELF_CLOSING_TAGS = [
+    "area", "base", "br", "col", "embed", "hr", "img", "input",
+    "link", "meta", "param", "source", "track", "wbr",
+]
+
+class ElementNode:
+    def __init__(self, tag):
+        self.tag = tag
+        self.children = []
+    
+    def __repr__(self):
+        return "<" + self.tag + ">"
+
+class TextNode:
+    def __init__(self, text):
+        self.text = text
+    
+    def __repr__(self):
+        return "text_node: " + self.text
+
+def parse(tokens):
+    currently_open = []
+    for tok in tokens:
+        if isinstance(tok, Text):
+            node = TextNode(tok.text)
+            if not currently_open: continue
+            currently_open[-1].children.append(node)
+        elif tok.tag.startswith("!"):
+            continue
+        elif tok.tag.startswith("/"):
+            node = currently_open.pop()
+            if not currently_open: 
+                return node
+            currently_open[-1].children.append(node)
+        elif tok.tag in SELF_CLOSING_TAGS:
+            node = ElementNode(tok.tag)
+            currently_open[-1].children.append(node)
+        else:
+            node = ElementNode(tok.tag)
+            currently_open.append(node)
+
+    [print(t) for t in currently_open]
+    raise Exception("Reached last token before the end of the document")
 
 
 if __name__ == "__main__":
     import sys
     headers, html = request(sys.argv[1])
-    displayText = lex(getBody(html))
+    tokens = lex(html)
+    tree = parse(tokens)
 
-    browser = Browser()
-    browser.layout(displayText)
-    tkinter.mainloop()
+    # browser = Browser()
+    # browser.layout(displayText)
+    # tkinter.mainloop()
