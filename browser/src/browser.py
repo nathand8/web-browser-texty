@@ -277,6 +277,7 @@ class TextNode:
 def parse(tokens):
     currently_open = []
     for tok in tokens:
+        implicit_tags(tok, currently_open)
         if isinstance(tok, Text):
             node = TextNode(tok.text)
             if not currently_open: continue
@@ -294,9 +295,34 @@ def parse(tokens):
         else:
             node = ElementNode(tok.tag)
             currently_open.append(node)
+    while currently_open:
+        node = currently_open.pop()
+        if not currently_open: return node
+        currently_open[-1].children.append(node)
 
     [print(t) for t in currently_open]
     raise Exception("Reached last token before the end of the document")
+
+HEAD_TAGS = [
+    "base", "basefont", "bgsound", "noscript",
+    "link", "meta", "title", "style", "script",
+]
+
+def implicit_tags(tok, currently_open):
+    tag = tok.tag if isinstance(tok, Tag) else None
+    while True:
+        open_tags = [node.tag for node in currently_open]
+        if open_tags == [] and tag != "html":
+            currently_open.append(ElementNode("html"))
+        elif open_tags == ["html"] and tag not in ["head", "body", "/html"]:
+            if tag in HEAD_TAGS:
+                implicit = "head"
+            else:
+                implicit = "body"
+            currently_open.append(ElementNode(implicit))
+        else:
+            break
+        
 
 
 if __name__ == "__main__":
