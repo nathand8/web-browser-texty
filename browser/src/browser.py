@@ -174,7 +174,7 @@ class Browser:
             self.canvas.create_text(x, y - self.scroll, text=text, font=font, anchor='nw')
 
 class Layout:
-    def __init__(self, tokens, width=WIDTH, height=HEIGHT):
+    def __init__(self, tree, width=WIDTH, height=HEIGHT):
         self.display_list = []
         self.x = HSTEP
         self.y = VSTEP
@@ -184,32 +184,40 @@ class Layout:
         self.size = 16
         self.width = width
         self.height = height
-        for tok in tokens:
-            self.token(tok)
+        self.recurse(tree)
         self.flush()
     
-    def token(self, tok):
-        if isinstance(tok, Text):
-            self.text(tok.text)
-        elif tok.tag == "i":
+    def recurse(self, tree):
+        if isinstance(tree, TextNode):
+            self.text(tree.text)
+        else:
+            self.open(tree.tag)
+            for child in tree.children:
+                self.recurse(child)
+            self.close(tree.tag)
+    
+    def open(self, tag):
+        if tag == "i":
             self.style = "italic"
-        elif tok.tag == "/i":
-            self.style = "roman"
-        elif tok.tag == "b":
+        elif tag == "b":
             self.weight = "bold"
-        elif tok.tag == "/b":
-            self.weight = "normal"
-        elif tok.tag == "small":
+        elif tag == "small":
             self.size -= 2
-        elif tok.tag == "/small":
-            self.size += 2
-        elif tok.tag == "big":
+        elif tag == "big":
             self.size += 4
-        elif tok.tag == "/big":
-            self.size -= 4
-        elif tok.tag == "br":
+        elif tag == "br":
             self.flush()
-        elif tok.tag == "/p":
+    
+    def close(self, tag):
+        if tag == "i":
+            self.style = "roman"
+        elif tag == "b":
+            self.weight = "normal"
+        elif tag == "small":
+            self.size += 2
+        elif tag == "big":
+            self.size -= 4
+        elif tag == "p":
             self.flush()
             self.y += VSTEP
 
@@ -297,6 +305,11 @@ if __name__ == "__main__":
     tokens = lex(html)
     tree = parse(tokens)
 
-    # browser = Browser()
-    # browser.layout(displayText)
-    # tkinter.mainloop()
+    browser = Browser()
+    browser.layout(tree)
+    tkinter.mainloop()
+
+# List function calls and the time it takes
+# import cProfile
+# from pstats import SortKey
+# cProfile.run('main()', sort=SortKey.CUMULATIVE)

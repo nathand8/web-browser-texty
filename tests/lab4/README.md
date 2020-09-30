@@ -1,6 +1,7 @@
 # Functional Tests
 run `python3 browser/src/browser.py https://browser.engineering/draft/html.html`
 - The parser should be able to parse this page despite the self-closing tags
+- The parser should still display newlines between paragraphs (added this time, but layout function has changed)
 
 # Unit tests
 
