@@ -3,8 +3,14 @@ run `python3 browser/src/browser.py https://browser.engineering/draft/html.html`
 - The parser should be able to parse this page despite the self-closing tags
 - The parser should still display newlines between paragraphs (added this time, but layout function has changed)
 
+run simple web server in the root of the directory
+run `python3 browser/src/browser.py http://localhost:8000/tests/lab4/SimpleH1Parse.html`
+- Hi should appear in the middle of the screen
+
+
 # Unit tests
 
+```python
 def test_parser_simpleH1():
     """Parser should be able to parse a simple html structure"""
     root_node = parse(lex("<html><body><h1>Hi!</h1></body></html>"))
@@ -63,8 +69,6 @@ def test_parser_implicit_all():
     """Parser should be able to add implicit html, head, and body"""
     root_node = parse(lex('<link /></head><div>Hi</div>'))
     # Expected Tree: <html><head><link /></head><body><div>Hi</div></body></html>
-    print()
-    print(tree_to_string(root_node))
     assert root_node.tag == "html"
     assert len(root_node.children) == 2
     head = root_node.children[0]
@@ -73,3 +77,4 @@ def test_parser_implicit_all():
     body = root_node.children[1]
     assert body.tag == "body"
     assert body.children[0].tag == "div"
+```
