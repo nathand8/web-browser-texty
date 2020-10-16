@@ -97,6 +97,9 @@ class Tag:
                 self.attributes[key.lower()] = value
             else:
                 self.attributes[attrpair.lower()] = ""
+    
+    def __repr__(self):
+        return "<" + self.tag + " " + str(self.attributes) + ">"
 
 
 def lex(body):

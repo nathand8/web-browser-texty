@@ -10,6 +10,11 @@ def tree_to_string(tree, indent=""):
         for node in tree.children:
             tree_to_string(node, indent + "  ")
 
+def test_lex_attributes():
+    a = lex('<div class="one two"></div>')
+    print(a)
+    [print(x) for x in a]
+
 # ========== Test parser ==========
 def test_parser_simpleH1():
     """Parser should be able to parse a simple html structure"""
