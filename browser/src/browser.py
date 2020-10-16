@@ -1,6 +1,4 @@
 import tkinter
-import tkinter.font
-import re
 from src.connection import request
 from src.lexer import lex
 from src.layout import Layout, parse

@@ -3,6 +3,9 @@ import pytest
 import mock
 
 from src.browser import *
+from src.connection import *
+from src.lexer import *
+from src.layout import *
 
 def tree_to_string(tree, indent=""):
     print(indent, tree)

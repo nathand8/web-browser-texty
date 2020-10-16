@@ -1,5 +1,8 @@
 from src.util.socket_util import *
 from src.browser import *
+from src.connection import *
+from src.lexer import *
+from src.layout import *
 
 def test_example_org():
     scheme, host, port, path = splitURL("http://example.org/index.html")

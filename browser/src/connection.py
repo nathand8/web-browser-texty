@@ -1,4 +1,5 @@
 from src.util.socket_util import *
+import re
 
 # This should take a url and split it into the scheme, host, and path
 def splitURL(url):
