@@ -20,7 +20,7 @@ class DocumentLayout:
         self.parent = None
         self.children = []
 
-    def layout(self):
+    def layout(self, width=WIDTH):
         self.w = WIDTH
         child = BlockLayout(self.node, self)
         self.children.append(child)
@@ -75,6 +75,9 @@ class BlockLayout:
     
     def draw(self, to):
         for child in self.children:
+            if self.node.tag == "pre":
+                x2, y2 = self.x + self.w, self.y + self.h
+                to.append(DrawRect(self.x, self.y, x2, y2, "gray"))
             child.draw(to)
 
 class InlineLayout:
@@ -104,7 +107,8 @@ class InlineLayout:
         self.h = self.cy - self.y
     
     def draw(self, to):
-        to.extend(self.display_list)
+        for x, y, word, font in self.display_list:
+            to.append(DrawText(x, y, word, font))
     
     def recurse(self, tree):
         if isinstance(tree, TextNode):
@@ -247,3 +251,35 @@ def tree_to_string(tree, indent=""):
     if isinstance(tree, ElementNode):
         for node in tree.children:
             tree_to_string(node, indent + "  ")
+
+class DrawText:
+    def __init__(self, x1, y1, text, font):
+        self.x1 = x1
+        self.y1 = y1
+        self.y2 = y1 + font.metrics("linespace")
+        self.text = text
+        self.font = font
+    
+    def draw(self, scroll, canvas):
+        canvas.create_text(
+            self.x1, self.y1 - scroll,
+            text=self.text,
+            font=self.font,
+            anchor='nw'
+        )
+    
+class DrawRect:
+    def __init__(self, x1, y1, x2, y2, color):
+        self.x1 = x1
+        self.y1 = y1
+        self.x2 = x2
+        self.y2 = y2
+        self.color = color
+    
+    def draw(self, scroll, canvas):
+        canvas.create_rectangle(
+            self.x1, self.y1 - scroll,
+            self.x2, self.y2 - scroll,
+            width=0,
+            fill=self.color
+        )

@@ -30,10 +30,14 @@ class Browser:
     
     def scrollup(self, e):
         self.scroll -= self.scroll_step
+        self.scroll = min(self.scroll, self.max_y)
+        self.scroll = max(0, self.scroll)
         self.render()
 
     def scrolldown(self, e):
         self.scroll += self.scroll_step
+        self.scroll = min(self.scroll, self.max_y)
+        self.scroll = max(0, self.scroll)
         self.render()
     
     def windowresize(self, e):
@@ -44,7 +48,8 @@ class Browser:
     def layout(self, tree):
         self.tree = tree
         document = DocumentLayout(tree)
-        document.layout()
+        document.layout(width=self.width)
+        self.max_y = document.h
 
         self.display_list = []
         document.draw(self.display_list)
@@ -53,10 +58,10 @@ class Browser:
     def render(self):
         self.canvas.delete("all")
         # self.canvas.create_text(200, 100, text="Hi!", font=self.font, anchor='nw')
-        for x, y, text, font in self.display_list:
-            if y > self.scroll + self.height: continue
-            if y + self.vstep < self.scroll: continue
-            self.canvas.create_text(x, y - self.scroll, text=text, font=font, anchor='nw')
+        for cmd in self.display_list:
+            if cmd.y1 > self.scroll + self.height: continue
+            if cmd.y2 < self.scroll: continue
+            cmd.draw(self.scroll, self.canvas)
 
         
 
