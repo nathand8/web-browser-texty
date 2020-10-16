@@ -2,21 +2,109 @@ from src.lexer import Tag, Text
 import tkinter
 import tkinter.font
 
-class Layout:
-    def __init__(self, tree, width, height, HSTEP, VSTEP):
+
+# Constants for the layout
+WIDTH, HEIGHT = 800, 600
+HSTEP, VSTEP = 13, 18
+
+INLINE_ELEMENTS = [
+    "a", "em", "strong", "small", "s", "cite", "q", "dfn", "abbr",
+    "ruby", "rt", "rp", "data", "time", "code", "var", "samp",
+    "kbd", "sub", "sup", "i", "b", "u", "mark", "bdi", "bdo",
+    "span", "br", "wbr", "big"
+]
+
+class DocumentLayout:
+    def __init__(self, node):
+        self.node = node
+        self.parent = None
+        self.children = []
+
+    def layout(self):
+        self.w = WIDTH
+        child = BlockLayout(self.node, self)
+        self.children.append(child)
+        child.x = self.x = 3 # For some reason the letters are getting cut off on the far left when we start at 0
+        child.y = self.y = 0
+        child.layout()
+        self.h = child.h
+    
+    def draw(self, to):
+        self.children[0].draw(to)
+        
+
+class BlockLayout:
+    def __init__(self, node, parent):
+        self.node = node
+        self.parent = parent
+        self.children = []
+
+        self.x = -1
+        self.y = -1
+        self.w = -1
+        self.h = -1
+    
+    def layout(self):
+        if self.has_block_children():
+            for child in self.node.children:
+                if isinstance(child, TextNode): continue
+                self.children.append(BlockLayout(child, self))
+        else:
+            self.children.append(InlineLayout(self.node, self))
+        
+        # Width is set by parent
+        self.w = self.parent.w
+
+        # Height is determined by children's heights
+        y = self.y
+        for child in self.children:
+            child.x = self.x
+            child.y = y
+            child.layout()
+            y += child.h
+        self.h = y - self.y
+
+    def has_block_children(self):
+        for child in self.node.children:
+            if isinstance(child, TextNode):
+                if not child.text.isspace():
+                    return False
+            elif child.tag in INLINE_ELEMENTS:
+                return False
+        return True
+    
+    def draw(self, to):
+        for child in self.children:
+            child.draw(to)
+
+class InlineLayout:
+    def __init__(self, node, parent):
+        self.node = node
+        self.parent = parent
+        self.children = []
+
+        self.x = -1
+        self.y = -1
+        self.w = -1
+        self.h = -1
+
+    def layout(self):
+        self.w = self.parent.w
         self.display_list = []
-        self.hstep = HSTEP
-        self.vstep = VSTEP
-        self.x = HSTEP
-        self.y = VSTEP
-        self.line = []
+
+        self.cx = self.x
+        self.cy = self.y
         self.weight = "normal"
         self.style = "roman"
         self.size = 16
-        self.width = width
-        self.height = height
-        self.recurse(tree)
+
+        self.line = []
+        self.recurse(self.node)
         self.flush()
+        self.h = self.cy - self.y
+    
+    def draw(self, to):
+        to.extend(self.display_list)
     
     def recurse(self, tree):
         if isinstance(tree, TextNode):
@@ -50,7 +138,7 @@ class Layout:
             self.size -= 4
         elif tag == "p":
             self.flush()
-            self.y += self.vstep
+            self.cy += VSTEP
 
     def text(self, text):
         font = tkinter.font.Font(
@@ -60,10 +148,10 @@ class Layout:
         )
         for word in text.split():
             w = font.measure(word)
-            if self.x + w >= self.width - self.hstep:
+            if self.cx + w >= self.w - HSTEP:
                 self.flush()
-            self.line.append((self.x, word, font))
-            self.x += w + font.measure(" ")
+            self.line.append((self.cx, word, font))
+            self.cx += w + font.measure(" ")
     
     # Called when a new line is needed
     def flush(self):
@@ -74,16 +162,16 @@ class Layout:
 
         metrics = [font.metrics() for x, word, font in self.line]
         max_ascent = max([metric["ascent"] for metric in metrics])
-        baseline = self.y + 1.2 * max_ascent
+        baseline = self.cy + 1.2 * max_ascent
 
         for x, word, font in self.line:
             y = baseline - font.metrics("ascent")
             self.display_list.append((x, y, word, font))
         
-        self.x = self.hstep
+        self.cx = HSTEP
         self.line = []
         max_descent = max([metric["descent"] for metric in metrics])
-        self.y = baseline + 1.2 * max_descent
+        self.cy = baseline + 1.2 * max_descent
 
 SELF_CLOSING_TAGS = [
     "area", "base", "br", "col", "embed", "hr", "img", "input",
@@ -153,3 +241,9 @@ def implicit_tags(tok, currently_open):
             currently_open.append(ElementNode(implicit))
         else:
             break
+
+def tree_to_string(tree, indent=""):
+    print(indent, tree)
+    if isinstance(tree, ElementNode):
+        for node in tree.children:
+            tree_to_string(node, indent + "  ")

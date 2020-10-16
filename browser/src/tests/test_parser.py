@@ -6,12 +6,7 @@ from src.browser import *
 from src.connection import *
 from src.lexer import *
 from src.layout import *
-
-def tree_to_string(tree, indent=""):
-    print(indent, tree)
-    if isinstance(tree, ElementNode):
-        for node in tree.children:
-            tree_to_string(node, indent + "  ")
+from src.util.helpers import *
 
 def test_lex_attributes():
     a = lex('<div class="one two"></div>')

@@ -1,11 +1,8 @@
 import tkinter
 from src.connection import request
 from src.lexer import lex
-from src.layout import Layout, parse
+from src.layout import DocumentLayout, parse, VSTEP, HSTEP, WIDTH, HEIGHT, tree_to_string
 
-# Constants for the layout
-WIDTH, HEIGHT = 800, 600
-HSTEP, VSTEP = 13, 18
 SCROLL_STEP = 40
 
 class Browser:
@@ -27,7 +24,7 @@ class Browser:
         self.hstep = HSTEP
         self.vstep = VSTEP
         self.scroll_step = SCROLL_STEP
-        self.tokens = []
+        self.tree = []
 
         # http://www.zggdwx.com/
     
@@ -42,11 +39,15 @@ class Browser:
     def windowresize(self, e):
         self.width = e.width
         self.height = e.height
-        self.layout(self.tokens)
+        self.layout(self.tree)
     
-    def layout(self, tokens):
-        self.tokens = tokens
-        self.display_list = Layout(tokens, self.width, self.height, self.hstep, self.vstep).display_list
+    def layout(self, tree):
+        self.tree = tree
+        document = DocumentLayout(tree)
+        document.layout()
+
+        self.display_list = []
+        document.draw(self.display_list)
         self.render()
     
     def render(self):
@@ -64,6 +65,7 @@ if __name__ == "__main__":
     headers, html = request(sys.argv[1])
     tokens = lex(html)
     tree = parse(tokens)
+    # tree_to_string(tree)
 
     browser = Browser()
     browser.layout(tree)
