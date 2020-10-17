@@ -21,7 +21,7 @@ class DocumentLayout:
         self.children = []
 
     def layout(self, width=WIDTH):
-        self.w = WIDTH
+        self.w = width
         child = BlockLayout(self.node, self)
         self.children.append(child)
         child.x = self.x = 3 # For some reason the letters are getting cut off on the far left when we start at 0
