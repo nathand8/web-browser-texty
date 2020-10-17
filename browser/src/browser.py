@@ -1,7 +1,8 @@
 import tkinter
 from src.connection import request
 from src.lexer import lex
-from src.layout import DocumentLayout, parse, VSTEP, HSTEP, WIDTH, HEIGHT, tree_to_string
+from src.layout import DocumentLayout, VSTEP, HSTEP, WIDTH, HEIGHT
+from src.parser import parse, tree_to_string
 
 SCROLL_STEP = 40
 
