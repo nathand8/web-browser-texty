@@ -7,18 +7,21 @@ import tkinter.font
 WIDTH, HEIGHT = 800, 600
 HSTEP, VSTEP = 13, 18
 
-INLINE_ELEMENTS = [
-    "a", "em", "strong", "small", "s", "cite", "q", "dfn", "abbr",
-    "ruby", "rt", "rp", "data", "time", "code", "var", "samp",
-    "kbd", "sub", "sup", "i", "b", "u", "mark", "bdi", "bdo",
-    "span", "br", "wbr", "big"
-]
+def px(s):
+    if s.endswith("px"):
+        return int(s[:-2])
+    else:
+        return 0
 
 class DocumentLayout:
     def __init__(self, node):
         self.node = node
         self.parent = None
         self.children = []
+
+        self.mt = self.mr = self.mb = self.ml = 0
+        self.bt = self.br = self.bb = self.bl = 0
+        self.pt = self.pr = self.pb = self.pl = 0
 
     def layout(self, width=WIDTH):
         self.w = width
@@ -43,8 +46,25 @@ class BlockLayout:
         self.y = -1
         self.w = -1
         self.h = -1
+
+        self.mt = self.mr = self.mb = self.ml = -1
+        self.bt = self.br = self.bb = self.bl = -1
+        self.pt = self.pr = self.pb = self.pl = -1
     
     def layout(self):
+        self.mt = px(self.node.style.get("margin-top", "0px"))
+        self.bt = px(self.node.style.get("border-top-width", "0px"))
+        self.pt = px(self.node.style.get("padding-top", "0px"))
+        self.mr = px(self.node.style.get("margin-right", "0px"))
+        self.br = px(self.node.style.get("border-right-width", "0px"))
+        self.pr = px(self.node.style.get("padding-right", "0px"))
+        self.mb = px(self.node.style.get("margin-bottom", "0px"))
+        self.bb = px(self.node.style.get("border-bottom-width", "0px"))
+        self.pb = px(self.node.style.get("padding-bottom", "0px"))
+        self.ml = px(self.node.style.get("margin-left", "0px"))
+        self.bl = px(self.node.style.get("border-left-width", "0px"))
+        self.pl = px(self.node.style.get("padding-left", "0px"))
+
         if self.has_block_children():
             for child in self.node.children:
                 if isinstance(child, TextNode): continue
@@ -53,15 +73,19 @@ class BlockLayout:
             self.children.append(InlineLayout(self.node, self))
         
         # Width is set by parent
-        self.w = self.parent.w
+        self.w = self.parent.w - self.parent.pl - self.parent.pr \
+            - self.parent.bl - self.parent.br \
+            - self.ml - self.mr
 
         # Height is determined by children's heights
+        self.y += self.mt
+        self.x += self.ml
         y = self.y
         for child in self.children:
-            child.x = self.x
+            child.x = self.x + self.pl + self.bl
             child.y = y
             child.layout()
-            y += child.h
+            y += child.h + child.mt + child.mb
         self.h = y - self.y
 
     def has_block_children(self):
@@ -69,7 +93,7 @@ class BlockLayout:
             if isinstance(child, TextNode):
                 if not child.text.isspace():
                     return False
-            elif child.tag in INLINE_ELEMENTS:
+            elif child.style.get("display", "block") == "inline":
                 return False
         return True
     
@@ -91,8 +115,13 @@ class InlineLayout:
         self.w = -1
         self.h = -1
 
+        self.mt = self.mr = self.mb = self.ml = 0
+        self.bt = self.br = self.bb = self.bl = 0
+        self.pt = self.pr = self.pb = self.pl = 0
+
     def layout(self):
-        self.w = self.parent.w
+        self.w = self.parent.w - self.parent.pl - self.parent.pr \
+            - self.parent.bl - self.parent.br
         self.display_list = []
 
         self.cx = self.x
@@ -110,47 +139,23 @@ class InlineLayout:
         for x, y, word, font in self.display_list:
             to.append(DrawText(x, y, word, font))
     
-    def recurse(self, tree):
-        if isinstance(tree, TextNode):
-            self.text(tree.text)
+    def recurse(self, node):
+        if isinstance(node, TextNode):
+            self.text(node)
         else:
-            self.open(tree.tag)
-            for child in tree.children:
+            for child in node.children:
                 self.recurse(child)
-            self.close(tree.tag)
     
-    def open(self, tag):
-        if tag == "i":
-            self.style = "italic"
-        elif tag == "b":
-            self.weight = "bold"
-        elif tag == "small":
-            self.size -= 2
-        elif tag == "big":
-            self.size += 4
-        elif tag == "br":
-            self.flush()
-    
-    def close(self, tag):
-        if tag == "i":
-            self.style = "roman"
-        elif tag == "b":
-            self.weight = "normal"
-        elif tag == "small":
-            self.size += 2
-        elif tag == "big":
-            self.size -= 4
-        elif tag == "p":
-            self.flush()
-            self.cy += VSTEP
+    def font(self, node):
+        bold = node.style["font-weight"]
+        italic = node.style["font-style"]
+        if italic == "normal": italic = "roman"
+        size = int(px(node.style.get("font-size")) * .75)
+        return tkinter.font.Font(size=size, weight=bold, slant=italic)
 
-    def text(self, text):
-        font = tkinter.font.Font(
-            size=self.size,
-            weight=self.weight,
-            slant=self.style,
-        )
-        for word in text.split():
+    def text(self, node):
+        font = self.font(node)
+        for word in node.text.split():
             w = font.measure(word)
             if self.cx + w >= self.w - HSTEP:
                 self.flush()

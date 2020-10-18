@@ -1,0 +1,11 @@
+div {
+    font-size: 12px;
+    margin-top: 50px;
+    margin-left: 50px;
+}
+.large {
+    font-size: 40px;
+}
+#regular {
+    font-size: 16px;
+}

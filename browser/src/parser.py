@@ -6,9 +6,15 @@ SELF_CLOSING_TAGS = [
 ]
 
 class ElementNode:
-    def __init__(self, tag):
+    def __init__(self, tag, attributes={}):
         self.tag = tag
+        self.attributes = attributes
         self.children = []
+        self.style = {}
+        for pair in self.attributes.get("style", "").split(";"):
+            if ":" not in pair: continue
+            prop, val = pair.split(":")
+            self.style[prop.strip().lower()] = val.strip()
     
     def __repr__(self):
         return "<" + self.tag + ">"
@@ -36,10 +42,10 @@ def parse(tokens):
                 return node
             currently_open[-1].children.append(node)
         elif tok.tag in SELF_CLOSING_TAGS:
-            node = ElementNode(tok.tag)
+            node = ElementNode(tok.tag, tok.attributes)
             currently_open[-1].children.append(node)
         else:
-            node = ElementNode(tok.tag)
+            node = ElementNode(tok.tag, tok.attributes)
             currently_open.append(node)
     while currently_open:
         node = currently_open.pop()
@@ -59,13 +65,13 @@ def implicit_tags(tok, currently_open):
     while True:
         open_tags = [node.tag for node in currently_open]
         if open_tags == [] and tag != "html":
-            currently_open.append(ElementNode("html"))
+            currently_open.append(ElementNode("html", {}))
         elif open_tags == ["html"] and tag not in ["head", "body", "/html"]:
             if tag in HEAD_TAGS:
                 implicit = "head"
             else:
                 implicit = "body"
-            currently_open.append(ElementNode(implicit))
+            currently_open.append(ElementNode(implicit, {}))
         else:
             break
 
