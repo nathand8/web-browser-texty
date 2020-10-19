@@ -98,3 +98,17 @@ def test_tag_selector_matches():
     node2 = ElementNode("p")
     assert s.matches(node1)
     assert not s.matches(node2)
+
+def test_css_parser_unparsable_value():
+    css = """
+    p {
+        color: #fff;
+        margin-bottom: 20px;
+    }
+    """
+    parser = CSSParser(css)
+    rules = parser.parse()
+    assert len(rules) == 1
+    rule = rules[0][1]
+    assert "color" not in rule
+    assert rule['margin-bottom'] == "20px"

@@ -92,7 +92,8 @@ class CSSParser:
 
             try:
                 (prop, val), i = self.pair(i)
-                pairs[prop] = val
+                if prop and val: # Fixes problem where value fails to parse (like hex colors)
+                    pairs[prop] = val
                 _, i = self.whitespace(i)
                 assert self.s[i] == ";"
                 _, i = self.whitespace(i+1)

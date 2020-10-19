@@ -111,10 +111,8 @@ def style(node, parent, rules):
         for prop, default in INHERITED_PROPERTIES.items():
             if prop not in node.style:
                 if parent:
-                    if prop == "color": print("setting prop from parent:", prop, parent.style[prop])
                     node.style[prop] = parent.style[prop]
                 else:
-                    if prop == "color": print("setting prop from default:", prop, default)
                     node.style[prop] = default
         for child in node.children:
             style(child, node, rules)
