@@ -82,3 +82,43 @@ def test_parser_implicit_all():
     body = root_node.children[1]
     assert body.tag == "body"
     assert body.children[0].tag == "div"
+
+def test_parser_implicit_real_world():
+    content = """<!DOCTYPE html>
+<html lang="en-US" xml:lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <title>Constructing a Document Tree | Web Browser Engineering</title>
+</head>
+
+<body>
+<header>
+<h1 class="title">Constructing a Document Tree</h1>
+</header>
+
+Content
+
+<footer>
+  &copy; 2018&ndash;2020 <a href="https://pavpanchekha.com">Pavel Panchekha</a> &amp; <a href="https://github.com/chrishtr">Chris Harrelson</a>
+</footer>
+
+<script type="text/javascript" src="../feedback.js"></script>
+</body>
+</html>"""
+    root_node = parse(lex(content))
+    print(tree_to_string(root_node))
+    assert root_node.tag == "html"
+    assert root_node.children[1].tag == "head"
+
+def test_lex_doctype_html():
+    content = """<!DOCTYPE html>
+<html lang="en-US" xml:lang="en-US">
+    <head>
+    </head>
+    <body>
+    </body>
+</html>
+"""
+    tokens = lex(content)
+    print(tokens)
+

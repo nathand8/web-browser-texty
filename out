@@ -1,0 +1,2985 @@
+ <html>
+   <body>
+     text_node: 
+
+     <html>
+       text_node: 
+
+       <head>
+         text_node: 
+  
+         <meta>
+         text_node: 
+  
+         <meta>
+         text_node: 
+  
+         <meta>
+         text_node: 
+
+  
+         <link>
+         text_node: 
+  
+         <link>
+         text_node: 
+  
+         <link>
+         text_node: 
+  
+         <link>
+         text_node: 
+  
+         <link>
+         text_node: 
+
+  
+         <title>
+           text_node: Constructing a Document Tree | Web Browser Engineering
+         text_node: 
+
+
+       text_node: 
+
+
+       <body>
+         text_node: 
+
+
+
+         <header>
+           text_node: 
+
+           <h1>
+             text_node: Constructing a Document Tree
+           text_node: 
+
+         text_node: 
+
+
+         <nav>
+           text_node: 
+  Chapter 4 of 
+           <a>
+             text_node: Web Browser Engineering
+           text_node: .
+  
+           <a>
+             text_node: &lt;
+           text_node: 
+  
+           <a>
+             text_node: &gt;
+           text_node: 
+
+         text_node: 
+
+
+         <nav>
+           text_node: 
+
+           <ul>
+             text_node: 
+
+             <li>
+               <a>
+                 text_node: A tree of nodes
+             text_node: 
+
+             <li>
+               <a>
+                 text_node: Self-closing tags
+             text_node: 
+
+             <li>
+               <a>
+                 text_node: Attributes
+             text_node: 
+
+             <li>
+               <a>
+                 text_node: Doctype declarations
+             text_node: 
+
+             <li>
+               <a>
+                 text_node: Handling author errors
+             text_node: 
+
+             <li>
+               <a>
+                 text_node: Summary
+             text_node: 
+
+             <li>
+               <a>
+                 text_node: Exercises
+             text_node: 
+
+           text_node: 
+
+         text_node: 
+
+
+         <p>
+           text_node: So far, your web browser sees web pages as a stream of open tags, close tags, and text. But HTML is actually a tree, and though the tree structure hasn’t been important yet, you’ll need it to draw backgrounds, add margins, and implement CSS. So this chapter adds a proper HTML parser and converts the layout engine to use it.
+         text_node: 
+
+         <div>
+           text_node: 
+
+           <ul>
+             text_node: 
+
+             <li>
+               <p>
+                 <a>
+                   text_node: A tree of nodes
+             text_node: 
+
+             <li>
+               <p>
+                 <a>
+                   text_node: Self-closing tags
+             text_node: 
+
+             <li>
+               <p>
+                 <a>
+                   text_node: Attributes
+             text_node: 
+
+             <li>
+               <p>
+                 <a>
+                   text_node: Doctype declarations
+             text_node: 
+
+             <li>
+               <p>
+                 <a>
+                   text_node: Handling author errors
+             text_node: 
+
+             <li>
+               <p>
+                 <a>
+                   text_node: Summary
+             text_node: 
+
+             <li>
+               <p>
+                 <a>
+                   text_node: Exercises
+             text_node: 
+
+           text_node: 
+
+         text_node: 
+
+         <h1>
+           text_node: A tree of nodes
+         text_node: 
+
+         <p>
+           text_node: Right now, the browser sees web pages as a flat sequence of tags and text, which is why the 
+           <code>
+             text_node: Layout
+           text_node:  object’s 
+           <code>
+             text_node: token
+           text_node:  method includes code for both open and close tags. But HTML is a tree, and each open and close tag pair are one node in the tree, as is each text token. We need to convert from tokens to nodes.
+         text_node: 
+
+         <p>
+           text_node: We’ll need a new 
+           <code>
+             text_node: parse
+           text_node:  function to do that:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: if
+                 text_node:  
+                 <span>
+                   text_node: __name__
+                 text_node:  
+                 <span>
+                   text_node: ==
+                 text_node:  
+                 <span>
+                   text_node: &quot;__main__&quot;
+                 text_node: :
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: # ...
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     nodes 
+                 <span>
+                   text_node: =
+                 text_node:  parse(lex(body))
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     browser 
+                 <span>
+                   text_node: =
+                 text_node:  Browser()
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     browser.layout(nodes)
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: # ...
+         text_node: 
+
+         <p>
+           text_node: Let’s start by defining the two types of nodes:
+           <span>
+             <span>
+               text_node: In reality there are other types of nodes too, like comments, doctypes, and 
+               <code>
+                 text_node: CDATA
+               text_node:  sections, and processing instructions. There are even some deprecated types!
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: class
+                 text_node:  ElementNode:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: def
+                 text_node:  
+                 <span>
+                   text_node: __init__
+                 text_node: (
+                 <span>
+                   text_node: self
+                 text_node: , tag):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: self
+                 text_node: .tag 
+                 <span>
+                   text_node: =
+                 text_node:  tag
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: self
+                 text_node: .children 
+                 <span>
+                   text_node: =
+                 text_node:  []
+               text_node: 
+
+               <span>
+                 <a>
+               text_node: 
+
+               <span>
+                 <a>
+                 <span>
+                   text_node: class
+                 text_node:  TextNode:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: def
+                 text_node:  
+                 <span>
+                   text_node: __init__
+                 text_node: (
+                 <span>
+                   text_node: self
+                 text_node: , text):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: self
+                 text_node: .text 
+                 <span>
+                   text_node: =
+                 text_node:  text
+         text_node: 
+
+         <p>
+           text_node: Element nodes start empty, and our parser fills them in. The idea is simple: keep track of the currently open elements, and any time we finish a node (at a text or end tag token) we add it to the bottom-most currently-open element. Let’s store the currently open elements in a list, from top to bottom:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: def
+                 text_node:  parse(tokens):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     currently_open 
+                 <span>
+                   text_node: =
+                 text_node:  []
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: for
+                 text_node:  tok 
+                 <span>
+                   text_node: in
+                 text_node:  tokens:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: # ...
+         text_node: 
+
+         <p>
+           text_node: Inside the loop, we need to figure out if the token is text, an open tag, or a close tag, and do the appropriate thing. 
+           <code>
+             text_node: Text
+           text_node:  tokens are the easiest: create a new 
+           <code>
+             text_node: TextNode
+           text_node:  and add it to the bottom-most open element.
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: if
+                 text_node:  
+                 <span>
+                   text_node: isinstance
+                 text_node: (tok, Text):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     node 
+                 <span>
+                   text_node: =
+                 text_node:  TextNode(tok.text)
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     currently_open[
+                 <span>
+                   text_node: -
+                 <span>
+                   text_node: 1
+                 text_node: ].children.append(node)
+         text_node: 
+
+         <p>
+           text_node: End tags are similar, but instead of making a new node they take the bottom-most open element:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: elif
+                 text_node:  tok.tag.startswith(
+                 <span>
+                   text_node: &quot;/&quot;
+                 text_node: ):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     node 
+                 <span>
+                   text_node: =
+                 text_node:  currently_open.pop()
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     currently_open[
+                 <span>
+                   text_node: -
+                 <span>
+                   text_node: 1
+                 text_node: ].children.append(node)
+         text_node: 
+
+         <p>
+           text_node: Finally, for open tags, we need to create a new 
+           <code>
+             text_node: ElementNode
+           text_node:  and add it to the list of currently open elements:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: else
+                 text_node: :
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     node 
+                 <span>
+                   text_node: =
+                 text_node:  ElementNode(tok.tag)
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     currently_open.append(node)
+         text_node: 
+
+         <p>
+           text_node: The core of this logic is about right, but what and when does the parser return? Try parsing
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: &lt;html&gt;&lt;body&gt;&lt;h1&gt;
+                 text_node: Hi!
+                 <span>
+                   text_node: &lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;
+         text_node: 
+
+         <p>
+           text_node: and the parser will read the 
+           <code>
+             text_node: &lt;/html&gt;
+           text_node:  element, pop the last open element off the list of open elements, and then crash since there’s no open element to append it to. So in this case we actually want to return that root element:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: elif
+                 text_node:  tok.tag.startswith(
+                 <span>
+                   text_node: &quot;/&quot;
+                 text_node: ):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     node 
+                 <span>
+                   text_node: =
+                 text_node:  currently_open.pop()
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: if
+                 text_node:  
+                 <span>
+                   text_node: not
+                 text_node:  currently_open: 
+                 <span>
+                   text_node: return
+                 text_node:  node
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     currently_open[
+                 <span>
+                   text_node: -
+                 <span>
+                   text_node: 1
+                 text_node: ].children.append(node)
+         text_node: 
+
+         <p>
+           text_node: Time to test this parser out!
+         text_node: 
+
+         <div>
+           text_node: 
+
+           <p>
+             text_node: HTML parsers don’t actually stop at the 
+             <code>
+               text_node: &lt;/html&gt;
+             text_node:  tag; they move to a state called 
+             <a>
+               <code>
+                 text_node: after after body
+             text_node: , where any additional nodes are added to the end of the 
+             <code>
+               text_node: &lt;body&gt;
+             text_node:  element.
+           text_node: 
+
+         text_node: 
+
+         <h1>
+           text_node: Self-closing tags
+         text_node: 
+
+         <p>
+           text_node: Try running this parser on this page, and you’ll find that 
+           <code>
+             text_node: parse
+           text_node:  doesn’t return anything; let’s find out why:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: def
+                 text_node:  parse(tokens):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: # ...
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: print
+                 text_node: (currently_open)
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: raise
+                 text_node:  
+                 <span>
+                   text_node: Exception
+                 text_node: (
+                 <span>
+                   text_node: &quot;Reached last token before end of document&quot;
+                 text_node: ))
+         text_node: 
+
+         <p>
+           text_node: Python prints a list of 
+           <code>
+             text_node: ElementNode
+           text_node:  objects, meaning that there were open HTML elements still around when it reached the last token:
+         text_node: 
+
+         <pre>
+           <code>
+             text_node: [&lt;__main__.ElementNode object at 0x101399c70&gt;,  ...]
+         text_node: 
+
+         <p>
+           text_node: Ok, that’s not too helpful. Python needs a method called 
+           <code>
+             text_node: __repr__
+           text_node:  to be defined to print things a little more reasonably:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: class
+                 text_node:  ElementNode:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: # ...
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: def
+                 text_node:  
+                 <span>
+                   text_node: __repr__
+                 text_node: (
+                 <span>
+                   text_node: self
+                 text_node: ):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: return
+                 text_node:  
+                 <span>
+                   text_node: &quot;&lt;&quot;
+                 text_node:  
+                 <span>
+                   text_node: +
+                 text_node:  
+                 <span>
+                   text_node: self
+                 text_node: .tag 
+                 <span>
+                   text_node: +
+                 text_node:  
+                 <span>
+                   text_node: &quot;&gt;&quot;
+         text_node: 
+
+         <p>
+           text_node: This produces a more reasonable result:
+         text_node: 
+
+         <pre>
+           <code>
+             text_node: [&lt;!DOCTYPE html&gt;,
+ &lt;html lang=&quot;en-US&quot; xml:lang=&quot;en-US&quot;&gt;,
+ &lt;head&gt;,
+ &lt;meta charset=&quot;utf-8&quot; /&gt;,
+ &lt;meta name=&quot;generator&quot; content=&quot;pandoc&quot; /&gt;,
+ &lt;meta name=&quot;viewport&quot; content=... /&gt;,
+ &lt;link rel=&quot;prev&quot; href=&quot;text&quot; /&gt;,
+ &lt;link rel=&quot;next&quot; href=&quot;layout&quot; /&gt;,
+ &lt;link rel=&quot;stylesheet&quot; href=&quot;../book.css&quot; /&gt;]
+         text_node: 
+
+         <p>
+           text_node: Why aren’t these open elements closed? Well, most of them (like 
+           <code>
+             text_node: &lt;meta&gt;
+           text_node:  and 
+           <code>
+             text_node: &lt;link&gt;
+           text_node: ) are what are called self-closing: you don’t ever write 
+           <code>
+             text_node: &lt;/meta&gt;
+           text_node:  or 
+           <code>
+             text_node: &lt;/link&gt;
+           text_node: . These tags don’t need a close tag because they never surround content. Let’s add that to our parser:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: # ...
+               text_node: 
+
+               <span>
+                 <a>
+                 <span>
+                   text_node: elif
+                 text_node:  tok.tag 
+                 <span>
+                   text_node: in
+                 text_node:  SELF_CLOSING_TAGS:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     node 
+                 <span>
+                   text_node: =
+                 text_node:  ElementNode(tok.tag)
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     currently_open[
+                 <span>
+                   text_node: -
+                 <span>
+                   text_node: 1
+                 text_node: ].children.append(node)
+         text_node: 
+
+         <p>
+           text_node: Use the following 
+           <code>
+             text_node: SELF_CLOSING_TAGS
+           text_node:  list, straight from the 
+           <a>
+             text_node: standard
+           text_node: :
+           <span>
+             <span>
+               text_node: A lot of these tags are obscure or obsolete, but it’s nice that there’s a complete list.
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 text_node: SELF_CLOSING_TAGS 
+                 <span>
+                   text_node: =
+                 text_node:  [
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: &quot;area&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;base&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;br&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;col&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;embed&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;hr&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;img&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;input&quot;
+                 text_node: ,
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: &quot;link&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;meta&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;param&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;source&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;track&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;wbr&quot;
+                 text_node: ,
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node: ]
+         text_node: 
+
+         <p>
+           text_node: Test your parser on this page to see if that helped.
+         text_node: 
+
+         <div>
+           text_node: 
+
+           <p>
+             text_node: Some people put a slash at the end of a self-closing tag (like 
+             <code>
+               text_node: &lt;br/&gt;
+             text_node: ) but unlike 
+             <a>
+               text_node: XML
+             text_node:  that final slash is totally ignored.
+           text_node: 
+
+         text_node: 
+
+         <h1>
+           text_node: Attributes
+         text_node: 
+
+         <p>
+           text_node: Strangely, the self-closing tag code in the previous section doesn’t help; why? Because the problem tags aren’t just 
+           <code>
+             text_node: &lt;meta&gt;
+           text_node: : they have attributes, like in 
+           <code>
+             text_node: &lt;meta charset="utf-8" /&gt;
+           text_node: . HTML attributes give additional information about an element; open tags can have any number of attributes (though close tags can’t have any). Attribute values can be either quoted, unquoted, or omitted entirely.
+         text_node: 
+
+         <p>
+           text_node: Attribute values can be anything, and if they’re quoted they can even contain whitespace. But for simplicity, let’s stick to unquoted attribute values. Then neither tag names nor attribute-value pairs can contain whitespace, so we can split the tag contents on whitespace to get the tag name and the attribute-value pairs:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: class
+                 text_node:  Tag:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: def
+                 text_node:  
+                 <span>
+                   text_node: __init__
+                 text_node: (
+                 <span>
+                   text_node: self
+                 text_node: , text):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         parts 
+                 <span>
+                   text_node: =
+                 text_node:  text.split()
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: self
+                 text_node: .tag 
+                 <span>
+                   text_node: =
+                 text_node:  parts[
+                 <span>
+                   text_node: 0
+                 text_node: ].lower()
+         text_node: 
+
+         <p>
+           text_node: Note that the tag name is converted to lower case, because HTML tag names are case-insensitive.
+         text_node: 
+
+         <p>
+           text_node: This fixes the problem of identifying self-closing tags, but since we’re already here, let’s also turn the attribute-value pairs into a dictionary:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: def
+                 text_node:  
+                 <span>
+                   text_node: __init__
+                 text_node: (
+                 <span>
+                   text_node: self
+                 text_node: , text):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: # ...
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: self
+                 text_node: .attributes 
+                 <span>
+                   text_node: =
+                 text_node:  {}
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: for
+                 text_node:  attrpair 
+                 <span>
+                   text_node: in
+                 text_node:  parts[
+                 <span>
+                   text_node: 1
+                 text_node: :]:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         key, value 
+                 <span>
+                   text_node: =
+                 text_node:  attrpair.split(
+                 <span>
+                   text_node: &quot;=&quot;
+                 text_node: , 
+                 <span>
+                   text_node: 1
+                 text_node: )
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: self
+                 text_node: .attributes[key.lower()] 
+                 <span>
+                   text_node: =
+                 text_node:  value
+         text_node: 
+
+         <p>
+           text_node: This code assumes all attributes have a value, but in fact the value can be omitted, like in 
+           <code>
+             text_node: &lt;input disabled&gt;
+           text_node: . In this case, the attribute value is supposed to default to the empty string:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: for
+                 text_node:  attrpair 
+                 <span>
+                   text_node: in
+                 text_node:  parts[
+                 <span>
+                   text_node: 1
+                 text_node: :]:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: if
+                 text_node:  
+                 <span>
+                   text_node: &quot;=&quot;
+                 text_node:  
+                 <span>
+                   text_node: in
+                 text_node:  attrpair:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: # ...
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: else
+                 text_node: :
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: self
+                 text_node: .attributes[attrpair.lower()] 
+                 <span>
+                   text_node: =
+                 text_node:  
+                 <span>
+                   text_node: &quot;&quot;
+         text_node: 
+
+         <p>
+           text_node: Finally, this code misbehaves on quoted values, since it includes the quotes as part of the value. We can fix that:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: if
+                 text_node:  
+                 <span>
+                   text_node: &quot;=&quot;
+                 text_node:  
+                 <span>
+                   text_node: in
+                 text_node:  attrpair:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: if
+                 text_node:  
+                 <span>
+                   text_node: len
+                 text_node: (value) 
+                 <span>
+                   text_node: &gt;
+                 text_node:  
+                 <span>
+                   text_node: 2
+                 text_node:  
+                 <span>
+                   text_node: and
+                 text_node:  value[
+                 <span>
+                   text_node: 0
+                 text_node: ] 
+                 <span>
+                   text_node: in
+                 text_node:  [
+                 <span>
+                   text_node: &quot;&#39;&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;
+                 <span>
+                   text_node: \&quot;
+                 <span>
+                   text_node: &quot;
+                 text_node: ]:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         value 
+                 <span>
+                   text_node: =
+                 text_node:  value[
+                 <span>
+                   text_node: 1
+                 text_node: :
+                 <span>
+                   text_node: -
+                 <span>
+                   text_node: 1
+                 text_node: ]
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: # ...
+         text_node: 
+
+         <p>
+           text_node: This conditional checks the first character of the value to determine if it’s quoted, and if so strips off the first and last character, leaving the contents of the quotes.
+         text_node: 
+
+         <div>
+           text_node: 
+
+           <p>
+             text_node: This is 
+             <a>
+               text_node: not the right way
+             text_node:  to do case insensitive comparisons; the Unicode case folding algorithm should be used if you want to handle languages other than English. But in HTML specifically, tag names only use the ASCII characters where this test is sufficient.
+           text_node: 
+
+         text_node: 
+
+         <h1>
+           text_node: Doctype declarations
+         text_node: 
+
+         <p>
+           text_node: Self-closing elements are now handled correctly and the list of open elements when parsing this page is now shorter:
+         text_node: 
+
+         <pre>
+           <code>
+             text_node: [&lt;!DOCTYPE&gt;]
+         text_node: 
+
+         <p>
+           text_node: This special tag is called a 
+           <a>
+             text_node: doctype
+           text_node: , and it’s not really an element at all. It’s not supposed to have close tag, but we can’t mark it a self-closing tag—it’s always the very first thing in the document, so there wouldn’t be an open element to append it to. It’s best to throw it away:
+           <span>
+             <span>
+               text_node: Real browsers also set some flags that switch between standards-compliant and legacy parsing and layout modes.
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: elif
+                 text_node:  tok.tag.startswith(
+                 <span>
+                   text_node: &quot;!&quot;
+                 text_node: ):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: continue
+         text_node: 
+
+         <p>
+           text_node: Furthermore, text can appear after the doctype declaration but before any other elements; in that case 
+           <code>
+             text_node: currently_open
+           text_node:  is empty so there’s no node to add that text to. Usually that text is just whitespace between 
+           <code>
+             text_node: &lt;!DOCTYPE html&gt;
+           text_node:  and 
+           <code>
+             text_node: &lt;html&gt;
+           text_node:  in the HTML source, so it’s silly to have the parser crash here. Let’s hand it by simply skipping text nodes when there aren’t any currently-open elements:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: if
+                 text_node:  
+                 <span>
+                   text_node: isinstance
+                 text_node: (tok, Text):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     node 
+                 <span>
+                   text_node: =
+                 text_node:  TextNode(tok.text)
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: if
+                 text_node:  
+                 <span>
+                   text_node: not
+                 text_node:  currently_open: 
+                 <span>
+                   text_node: continue
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     currently_open[
+                 <span>
+                   text_node: -
+                 <span>
+                   text_node: 1
+                 text_node: ].children.append(node)
+         text_node: 
+
+         <p>
+           text_node: With this change, the parser can now parse this page, and most other valid HTML pages!
+         text_node: 
+
+         <p>
+           text_node: Now our browser should 
+           <em>
+             text_node: use
+           text_node:  this element tree. Let’s add a 
+           <code>
+             text_node: recurse
+           text_node:  method to replace the current 
+           <code>
+             text_node: for
+           text_node:  loop inside the 
+           <code>
+             text_node: Layout
+           text_node:  constructor. To start, we can just call 
+           <code>
+             text_node: token
+           text_node:  twice per element node, emulating the old token-based layout:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: def
+                 text_node:  recurse(
+                 <span>
+                   text_node: self
+                 text_node: , tree):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: if
+                 text_node:  
+                 <span>
+                   text_node: isinstance
+                 text_node: (tree, TextNode):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: self
+                 text_node: .text(tree.text)
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: else
+                 text_node: :
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: self
+                 text_node: .token(Tag(tree.tag))
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: for
+                 text_node:  child 
+                 <span>
+                   text_node: in
+                 text_node:  tree.children:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:             
+                 <span>
+                   text_node: self
+                 text_node: .recurse(child)
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: self
+                 text_node: .token(Tag(
+                 <span>
+                   text_node: &quot;/&quot;
+                 text_node:  
+                 <span>
+                   text_node: +
+                 text_node:  tree.tag))
+         text_node: 
+
+         <p>
+           text_node: This works but it’s a little ridiculous. We’ve gone through all this effort to construct a tree, and now we’re just emulating tokens? It’s now a little clearer that the old 
+           <code>
+             text_node: token
+           text_node:  function had three different parts to it:
+         text_node: 
+
+         <ul>
+           text_node: 
+
+           <li>
+             text_node: The part that handled 
+             <code>
+               text_node: Text
+             text_node:  tokens, which now isn’t being used;
+           text_node: 
+
+           <li>
+             text_node: The part that handled start tags; and
+           text_node: 
+
+           <li>
+             text_node: The part that handled end tags.
+           text_node: 
+
+         text_node: 
+
+         <p>
+           text_node: Let’s split 
+           <code>
+             text_node: token
+           text_node:  into two functions, then, 
+           <code>
+             text_node: open
+           text_node:  and 
+           <code>
+             text_node: close
+           text_node: :
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: def
+                 text_node:  
+                 <span>
+                   text_node: open
+                 text_node: (
+                 <span>
+                   text_node: self
+                 text_node: , tag):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: if
+                 text_node:  tag 
+                 <span>
+                   text_node: ==
+                 text_node:  
+                 <span>
+                   text_node: &quot;i&quot;
+                 text_node: :
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: self
+                 text_node: .style 
+                 <span>
+                   text_node: =
+                 text_node:  
+                 <span>
+                   text_node: &quot;italic&quot;
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: # ...
+               text_node: 
+
+               <span>
+                 <a>
+               text_node: 
+
+               <span>
+                 <a>
+                 <span>
+                   text_node: def
+                 text_node:  close(
+                 <span>
+                   text_node: self
+                 text_node: , tag):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: if
+                 text_node:  tag 
+                 <span>
+                   text_node: ==
+                 text_node:  
+                 <span>
+                   text_node: &quot;i&quot;
+                 text_node: :
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: self
+                 text_node: .style 
+                 <span>
+                   text_node: =
+                 text_node:  
+                 <span>
+                   text_node: &quot;roman&quot;
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: # ...
+         text_node: 
+
+         <p>
+           text_node: Make sure to update 
+           <code>
+             text_node: recurse
+           text_node:  to call these two new functions; now it no longer has to construct 
+           <code>
+             text_node: Tag
+           text_node:  objects or add slashes to things to indicate a close tag!
+         text_node: 
+
+         <div>
+           text_node: 
+
+           <p>
+             text_node: Document type declarations are a holdover from 
+             <a>
+               text_node: SGML
+             text_node: , the 80s-era precursor to XML, and originally included a URL pointing to a full definition of the SGML variant you were using. Browsers use the absense of a document type declaration to identify 
+             <a>
+               text_node: older HTML versions
+             text_node: .
+             <span>
+               <span>
+                 text_node: There’s also a crazy thing called “
+                 <a>
+                   text_node: almost standards
+                 text_node: ” or “limited quirks” mode, due to a backwards-incompatible change in table cell vertical layout. Yes. I don’t need to make these up!
+           text_node: 
+
+         text_node: 
+
+         <h1>
+           text_node: Handling author errors
+         text_node: 
+
+         <p>
+           text_node: The parser now handles HTML pages correctly—at least, pages written by the sorts of goody-two-shoes programmers who remember the HTML boilerplate, close their open tags, and make their bed in the morning. We, or at least I, am not such a person, so browsers have had to adapt to handle poorly-written, confusing, boilerplate-less HTML.
+         text_node: 
+
+         <p>
+           text_node: In fact, modern HTML parsers are capable of transforming 
+           <em>
+             text_node: any
+           text_node:  string of characters into an HTML tree, no matter how confusing the markup.
+           <span>
+             <span>
+               text_node: Yes, it’s crazy, and for a few years in the early ’00s the W3C tried to 
+               <a>
+                 text_node: do away with it
+               text_node: . They failed.
+           text_node:  The full algorithm is, as you might expect, complicated beyond belief, with dozens of ever-more-special cases forming a taxonomy of human error, but one of the nicer time-saving innovations is 
+           <em>
+             text_node: implicit
+           text_node:  tags.
+         text_node: 
+
+         <p>
+           text_node: Normally, an HTML document starts with a familiar boilerplate:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: &lt;!doctype 
+                 text_node: html
+                 <span>
+                   text_node: &gt;
+               text_node: 
+
+               <span>
+                 <a>
+                 <span>
+                   text_node: &lt;html&gt;
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:   
+                 <span>
+                   text_node: &lt;head&gt;
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:   
+                 <span>
+                   text_node: &lt;/head&gt;
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:   
+                 <span>
+                   text_node: &lt;body&gt;
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:   
+                 <span>
+                   text_node: &lt;/body&gt;
+               text_node: 
+
+               <span>
+                 <a>
+                 <span>
+                   text_node: &lt;/html&gt;
+         text_node: 
+
+         <p>
+           text_node: In reality, 
+           <em>
+             text_node: all six
+           text_node:  of these tags, except the doctype, are optional: browsers insert them automatically. To do so, they compare the current token’s tag to the list of currently open elements; that reveals whether any additional elements need to be created:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: for
+                 text_node:  tok 
+                 <span>
+                   text_node: in
+                 text_node:  tokens:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     implicit_tags(tok, currently_open)
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: # ...
+         text_node: 
+
+         <p>
+           text_node: The 
+           <code>
+             text_node: implicit_tags
+           text_node:  function examines the incoming token and determines whether any implicit tags need to be added. Importantly, more than one implicit tag may need to be added, so the function uses a loop:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: def
+                 text_node:  implicit_tags(tok, currently_open):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     tag 
+                 <span>
+                   text_node: =
+                 text_node:  tok.tag 
+                 <span>
+                   text_node: if
+                 text_node:  
+                 <span>
+                   text_node: isinstance
+                 text_node: (tok, Tag) 
+                 <span>
+                   text_node: else
+                 text_node:  
+                 <span>
+                   text_node: None
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: while
+                 text_node:  
+                 <span>
+                   text_node: True
+                 text_node: :
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         open_tags 
+                 <span>
+                   text_node: =
+                 text_node:  [node.tag 
+                 <span>
+                   text_node: for
+                 text_node:  node 
+                 <span>
+                   text_node: in
+                 text_node:  currently_open]
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: # ...
+         text_node: 
+
+         <p>
+           text_node: That loop needs to handle each possible implicit tag. The implicit 
+           <code>
+             text_node: &lt;html&gt;
+           text_node:  tag is easiest, since it must be the root element:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: if
+                 text_node:  open_tags 
+                 <span>
+                   text_node: ==
+                 text_node:  [] 
+                 <span>
+                   text_node: and
+                 text_node:  tag 
+                 <span>
+                   text_node: !=
+                 text_node:  
+                 <span>
+                   text_node: &quot;html&quot;
+                 text_node: :
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     currently_open.append(ElementNode(
+                 <span>
+                   text_node: &quot;html&quot;
+                 text_node: ))
+         text_node: 
+
+         <p>
+           text_node: With the 
+           <code>
+             text_node: &lt;head&gt;
+           text_node:  and 
+           <code>
+             text_node: &lt;body&gt;
+           text_node:  elements, you need to look at the tag being handled. Only a few tags are actually supposed to go in the 
+           <code>
+             text_node: &lt;head&gt;
+           text_node:  element:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 text_node: HEAD_TAGS 
+                 <span>
+                   text_node: =
+                 text_node:  [
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: &quot;base&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;basefont&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;bgsound&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;noscript&quot;
+                 text_node: ,
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: &quot;link&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;meta&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;title&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;style&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;script&quot;
+                 text_node: ,
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node: ]
+         text_node: 
+
+         <p>
+           text_node: That tells you whether to insert 
+           <code>
+             text_node: &lt;head&gt;
+           text_node:  or 
+           <code>
+             text_node: &lt;body&gt;
+           text_node: :
+           <span>
+             <span>
+               text_node: Note that some tags, like 
+               <code>
+                 text_node: &lt;script&gt;
+               text_node: , can go in either the head or body section of an HTML document. The code below places it inside a 
+               <code>
+                 text_node: &lt;head&gt;
+               text_node:  tag by default, but doesn’t prevent its being explicitly placed inside 
+               <code>
+                 text_node: &lt;body&gt;
+               text_node:  by the page author.
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: elif
+                 text_node:  open_tags 
+                 <span>
+                   text_node: ==
+                 text_node:  [
+                 <span>
+                   text_node: &quot;html&quot;
+                 text_node: ] 
+                 <span>
+                   text_node: and
+                 text_node:  tag 
+                 <span>
+                   text_node: not
+                 text_node:  
+                 <span>
+                   text_node: in
+                 text_node:  [
+                 <span>
+                   text_node: &quot;head&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;body&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;/html&quot;
+                 text_node: ]:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: if
+                 text_node:  tag 
+                 <span>
+                   text_node: in
+                 text_node:  HEAD_TAGS:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         implicit 
+                 <span>
+                   text_node: =
+                 text_node:  
+                 <span>
+                   text_node: &quot;head&quot;
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: else
+                 text_node: :
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         implicit 
+                 <span>
+                   text_node: =
+                 text_node:  
+                 <span>
+                   text_node: &quot;body&quot;
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     currently_open.append(ElementNode(implicit))
+         text_node: 
+
+         <p>
+           text_node: If you see an element that’s not supposed to go in the 
+           <code>
+             text_node: &lt;head&gt;
+           text_node: , you need to implicitly close the 
+           <code>
+             text_node: &lt;head&gt;
+           text_node:  section:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: elif
+                 text_node:  open_tags 
+                 <span>
+                   text_node: ==
+                 text_node:  [
+                 <span>
+                   text_node: &quot;html&quot;
+                 text_node: , 
+                 <span>
+                   text_node: &quot;head&quot;
+                 text_node: ] 
+                 <span>
+                   text_node: and
+                 text_node:  tag 
+                 <span>
+                   text_node: not
+                 text_node:  
+                 <span>
+                   text_node: in
+                 text_node:  [
+                 <span>
+                   text_node: &quot;/head&quot;
+                 text_node: ] 
+                 <span>
+                   text_node: +
+                 text_node:  HEAD_TAGS:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     node 
+                 <span>
+                   text_node: =
+                 text_node:  currently_open.pop()
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     currently_open[
+                 <span>
+                   text_node: -
+                 <span>
+                   text_node: 1
+                 text_node: ].children.append(node)
+         text_node: 
+
+         <p>
+           text_node: Note that the this code doesn’t create the 
+           <code>
+             text_node: &lt;body&gt;
+           text_node:  element itself. That’s for the next iteration of the loop.
+         text_node: 
+
+         <p>
+           text_node: The loop ends for all other cases, with no additional implicit tags being inserted:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: else
+                 text_node: :
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: break
+         text_node: 
+
+         <p>
+           text_node: We also want implicit close tags for 
+           <code>
+             text_node: &lt;/body&gt;
+           text_node:  and 
+           <code>
+             text_node: &lt;/html&gt;
+           text_node: . Usually, leaving them out will mean the 
+           <code>
+             text_node: parse
+           text_node:  function reaches the end of its loop without closing all open tags, and would thus return nothing. Let’s make it return 
+           <em>
+             text_node: something
+           text_node:  instead:
+         text_node: 
+
+         <div>
+           <pre>
+             <code>
+               <span>
+                 <a>
+                 <span>
+                   text_node: def
+                 text_node:  parse(tokens):
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: # ...
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:     
+                 <span>
+                   text_node: while
+                 text_node:  currently_open:
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         node 
+                 <span>
+                   text_node: =
+                 text_node:  currently_open.pop()
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         
+                 <span>
+                   text_node: if
+                 text_node:  
+                 <span>
+                   text_node: not
+                 text_node:  currently_open: 
+                 <span>
+                   text_node: return
+                 text_node:  node
+               text_node: 
+
+               <span>
+                 <a>
+                 text_node:         currently_open[
+                 <span>
+                   text_node: -
+                 <span>
+                   text_node: 1
+                 text_node: ].children.append(node)
+         text_node: 
+
+         <p>
+           text_node: These rules for malformed HTML may seem arbitrary, and they are: they evolved over years of trying to guess what people “meant” when they wrote that HTML, and are now codified in the 
+           <a>
+             text_node: HTML parsing standard
+           text_node: .
+         text_node: 
+
+         <div>
+           text_node: 
+
+           <p>
+             text_node: HTML parsers also have an 
+             <a>
+               text_node: algorithm
+             text_node:  to handle mis-nested elements, plus a 
+             <a>
+               text_node: list of active formatting elements
+             text_node:  to handle formatting like 
+             <code>
+               text_node: &lt;b&gt;b&lt;i&gt;bi&lt;/b&gt;i&lt;/i&gt;
+             text_node: .
+           text_node: 
+
+         text_node: 
+
+         <h1>
+           text_node: Summary
+         text_node: 
+
+         <p>
+           text_node: This chapter taught our browser that HTML is a tree, not just a flat list of tokens. We added:
+         text_node: 
+
+         <ul>
+           text_node: 
+
+           <li>
+             text_node: A parser to transform HTML tokens to a tree
+           text_node: 
+
+           <li>
+             text_node: Layout operating recursively on the tree
+           text_node: 
+
+           <li>
+             text_node: Code to recognize and handle attributes on elements
+           text_node: 
+
+           <li>
+             text_node: Automatic fixes for some malformed HTML documents
+           text_node: 
+
+         text_node: 
+
+         <p>
+           text_node: The tree structure of HTML is essential to display visually complex web pages, as we will see in the 
+           <a>
+             text_node: next chapter
+           text_node: .
+         text_node: 
+
+         <div>
+           text_node: 
+
+
+         text_node: 
+
+         <h1>
+           text_node: Exercises
+         text_node: 
+
+         <p>
+           <em>
+             text_node: Comments:
+           text_node:  Update the HTML lexer to support comments. Comments in HTML begin with 
+           <code>
+             text_node: &lt;!--
+           text_node:  and end with 
+           <code>
+             text_node: --&gt;
+           text_node: . However, comments aren’t the same as tags: they can contain any text, including left and right angle brackets. The lexer should skip comments, not generating any token at all. Test: is 
+           <code>
+             text_node: &lt;!--&gt;
+           text_node:  a comment, or does it just start one?
+         text_node: 
+
+         <p>
+           <em>
+             text_node: Paragraphs:
+           text_node:  Since it’s not clear what it would mean for one paragraph to contain another, the most common reason for this to happen in a web page is that someone forgot a close tag. Change the parser so that a document like 
+           <code>
+             text_node: &lt;p&gt;hello&lt;p&gt;world&lt;/p&gt;
+           text_node:  results in two sibling paragraphs instead of one paragraph inside another.
+         text_node: 
+
+         <p>
+           <em>
+             text_node: Scripts:
+           text_node:  JavaScript code embedded in a 
+           <code>
+             text_node: &lt;script&gt;
+           text_node:  tag uses the left angle bracket to mean less-than. Modify your lexer so that the contents of 
+           <code>
+             text_node: &lt;script&gt;
+           text_node:  tags are treated specially: no tags are allowed inside 
+           <code>
+             text_node: &lt;script&gt;
+           text_node: , except the 
+           <code>
+             text_node: &lt;/script&gt;
+           text_node:  close tag.
+           <span>
+             <span>
+               text_node: Technically it’s just 
+               <code>
+                 text_node: &lt;/script
+               text_node:  followed by a 
+               <a>
+                 text_node: space, tab, 
+                 <code>
+                   text_node: \v
+                 text_node: , 
+                 <code>
+                   text_node: \r
+                 text_node: , slash, or greater than sign
+               text_node: . If you need to talk about 
+               <code>
+                 text_node: &lt;/script&gt;
+               text_node:  tags inside your JavaScript code, split it across multiple strings. I talk about it in a video.
+         text_node: 
+
+         <p>
+           <em>
+             text_node: Quoted attributes:
+           text_node:  Quoted attributes can contain spaces and right angle brackets. Fix the lexer so that this is supported properly. Hint: the current lexer is a finite state machine, with two states (determined by 
+           <code>
+             text_node: in_tag
+           text_node: ). You’ll need more states.
+         text_node: 
+
+         <p>
+           <em>
+             text_node: Syntax Highlighting:
+           text_node:  Implement the 
+           <code>
+             text_node: view-source:
+           text_node:  protocol as in 
+           <a>
+             text_node: Chapter 1
+           text_node: , but make it syntax-highlight the source code of HTML pages. Keep source code for HTML tags in a normal font, but make text contents bold. If you’ve implemented it, wrap text in 
+           <code>
+             text_node: &lt;pre&gt;
+           text_node:  tags as well to preserve line breaks. Use your browser’s HTML lexer to implement the syntax highlighter.
+         text_node: 
+
+
+
+         <nav>
+           text_node: 
+  Chapter 4 of 
+           <a>
+             text_node: Web Browser Engineering
+           text_node: .
+  
+           <a>
+             text_node: &lt;
+           text_node: 
+  
+           <a>
+             text_node: &gt;
+           text_node: 
+
+         text_node: 
+
+
+         <footer>
+           text_node: 
+  &copy; 2018&ndash;2020 
+           <a>
+             text_node: Pavel Panchekha
+           text_node:  &amp; 
+           <a>
+             text_node: Chris Harrelson
+           text_node: 
+
+         text_node: 
+
+
+         <script>
+         text_node: 
+
+       text_node: 
+
+     text_node: 
+
+setting prop from default: color black
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color blue
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color blue
+setting prop from parent: color blue
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 
+setting prop from parent: color 

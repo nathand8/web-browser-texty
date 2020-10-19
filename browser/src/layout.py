@@ -136,8 +136,8 @@ class InlineLayout:
         self.h = self.cy - self.y
     
     def draw(self, to):
-        for x, y, word, font in self.display_list:
-            to.append(DrawText(x, y, word, font))
+        for x, y, word, font, color in self.display_list:
+            to.append(DrawText(x, y, word, font, color))
     
     def recurse(self, node):
         if isinstance(node, TextNode):
@@ -152,14 +152,15 @@ class InlineLayout:
         if italic == "normal": italic = "roman"
         size = int(px(node.style.get("font-size")) * .75)
         return tkinter.font.Font(size=size, weight=bold, slant=italic)
-
+    
     def text(self, node):
         font = self.font(node)
+        color = node.style["color"]
         for word in node.text.split():
             w = font.measure(word)
             if self.cx + w >= self.w - HSTEP:
                 self.flush()
-            self.line.append((self.cx, word, font))
+            self.line.append((self.cx, word, font, color))
             self.cx += w + font.measure(" ")
     
     # Called when a new line is needed
@@ -169,13 +170,13 @@ class InlineLayout:
         # Update the x and y fields
         if not self.line: return
 
-        metrics = [font.metrics() for x, word, font in self.line]
+        metrics = [font.metrics() for x, word, font, color in self.line]
         max_ascent = max([metric["ascent"] for metric in metrics])
         baseline = self.cy + 1.2 * max_ascent
 
-        for x, word, font in self.line:
+        for x, word, font, color in self.line:
             y = baseline - font.metrics("ascent")
-            self.display_list.append((x, y, word, font))
+            self.display_list.append((x, y, word, font, color))
         
         self.cx = HSTEP
         self.line = []
@@ -184,18 +185,20 @@ class InlineLayout:
 
 
 class DrawText:
-    def __init__(self, x1, y1, text, font):
+    def __init__(self, x1, y1, text, font, color):
         self.x1 = x1
         self.y1 = y1
         self.y2 = y1 + font.metrics("linespace")
         self.text = text
         self.font = font
+        self.color = color
     
     def draw(self, scroll, canvas):
         canvas.create_text(
             self.x1, self.y1 - scroll,
             text=self.text,
             font=self.font,
+            fill=self.color,
             anchor='nw'
         )
     
@@ -214,3 +217,11 @@ class DrawRect:
             width=0,
             fill=self.color
         )
+
+def find_layout(x, y, tree):
+    for child in reversed(tree.children):
+        result = find_layout(x, y, child)
+        if result: return result
+    if tree.x <= x < tree.x + tree.w and \
+       tree.y <= y < tree.y + tree.h:
+        return tree

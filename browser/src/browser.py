@@ -1,7 +1,7 @@
 import tkinter
 from src.connection import request
 from src.lexer import lex
-from src.layout import DocumentLayout, VSTEP, HSTEP, WIDTH, HEIGHT
+from src.layout import DocumentLayout, VSTEP, HSTEP, WIDTH, HEIGHT, find_layout
 from src.parser import parse, tree_to_string, ElementNode, TextNode
 from src.css_parser import CSSParser
 from src.util.helpers import find_links, relative_url
@@ -22,6 +22,7 @@ class Browser:
         self.window.bind("<Up>", self.scrollup)
         self.window.bind("<Down>", self.scrolldown)
         self.window.bind("<Configure>", self.windowresize)
+        self.window.bind("<Button-1>", self.handle_click)
         self.width = WIDTH
         self.height = HEIGHT
         self.hstep = HSTEP
@@ -47,17 +48,23 @@ class Browser:
         self.height = e.height
         self.layout()
     
+    def handle_click(self, e):
+        x, y = e.x, e.y + self.scroll
+        obj = find_layout(x, y, self.document)
+        if not obj: return
+        elt = obj.node
+    
     def layout(self, tree=None):
         if not tree:
             tree = self.cached_tree
         else:
             self.cached_tree = tree
-        document = DocumentLayout(tree)
-        document.layout(width=self.width)
-        self.max_y = document.h
+        self.document = DocumentLayout(tree)
+        self.document.layout(width=self.width)
+        self.max_y = self.document.h
 
         self.display_list = []
-        document.draw(self.display_list)
+        self.document.draw(self.display_list)
         self.render()
     
     def render(self):
@@ -79,8 +86,7 @@ class Browser:
             header, body = request(relative_url(link, url))
             rules.extend(CSSParser(body).parse())
         
-        # tree_to_string(nodes)
-        self.rules = rules
+        tree_to_string(nodes)
         rules.sort(key=lambda selector_body: selector_body[0].priority(), reverse=True)
         style(nodes, None, rules)
         self.layout(nodes)
@@ -90,6 +96,7 @@ INHERITED_PROPERTIES = {
     "font-style": "normal",
     "font-weight": "normal",
     "font-size": "16px",
+    "color": "black"
 }
 
 def style(node, parent, rules):
@@ -98,15 +105,17 @@ def style(node, parent, rules):
     else:
         for selector, pairs in rules:
             if selector.matches(node):
-                for property in pairs:
-                    if property not in node.style:
-                        node.style[property] = pairs[property]
-        for property, default in INHERITED_PROPERTIES.items():
-            if property not in node.style:
+                for prop in pairs:
+                    if prop not in node.style:
+                        node.style[prop] = pairs[prop]
+        for prop, default in INHERITED_PROPERTIES.items():
+            if prop not in node.style:
                 if parent:
-                    node.style[property] = parent.style[property]
+                    if prop == "color": print("setting prop from parent:", prop, parent.style[prop])
+                    node.style[prop] = parent.style[prop]
                 else:
-                    node.style[property] = default
+                    if prop == "color": print("setting prop from default:", prop, default)
+                    node.style[prop] = default
         for child in node.children:
             style(child, node, rules)
 

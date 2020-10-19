@@ -29,7 +29,6 @@ class TextNode:
 def parse(tokens):
     currently_open = []
     for tok in tokens:
-        implicit_tags(tok, currently_open)
         if isinstance(tok, Text):
             node = TextNode(tok.text)
             if not currently_open: continue
@@ -42,9 +41,11 @@ def parse(tokens):
                 return node
             currently_open[-1].children.append(node)
         elif tok.tag in SELF_CLOSING_TAGS:
+            implicit_tags(tok, currently_open)
             node = ElementNode(tok.tag, tok.attributes)
             currently_open[-1].children.append(node)
         else:
+            implicit_tags(tok, currently_open)
             node = ElementNode(tok.tag, tok.attributes)
             currently_open.append(node)
     while currently_open:
