@@ -86,7 +86,7 @@ class Browser:
             header, body = request(relative_url(link, url))
             rules.extend(CSSParser(body).parse())
         
-        tree_to_string(nodes)
+        # tree_to_string(nodes)
         rules.sort(key=lambda selector_body: selector_body[0].priority(), reverse=True)
         style(nodes, None, rules)
         self.layout(nodes)
