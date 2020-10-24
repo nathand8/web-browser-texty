@@ -4,7 +4,7 @@ from src.lexer import lex
 from src.layout import DocumentLayout, VSTEP, HSTEP, WIDTH, HEIGHT, find_layout
 from src.parser import parse, tree_to_string, ElementNode, TextNode
 from src.css_parser import CSSParser
-from src.util.helpers import find_links, relative_url
+from src.util.helpers import find_links, relative_url, is_link
 
 SCROLL_STEP = 40
 
@@ -53,6 +53,11 @@ class Browser:
         obj = find_layout(x, y, self.document)
         if not obj: return
         elt = obj.node
+        while elt and not is_link(elt):
+            elt = elt.parent
+        if elt:
+            url = relative_url(elt.attributes["href"], self.url)
+            self.load(url)
     
     def layout(self, tree=None):
         if not tree:
@@ -76,6 +81,7 @@ class Browser:
             cmd.draw(self.scroll, self.canvas)
 
     def load(self, url):
+        self.url = url
         header, body = request(url)
         nodes = parse(lex(body))
 

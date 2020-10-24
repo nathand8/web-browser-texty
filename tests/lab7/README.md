@@ -12,3 +12,7 @@ python3 browser/src/browser.py http://localhost:8000/tests/lab7/multi_line_parag
 - The fifth paragraph should have multiple lines and should be indented in from the right and left by 50px
 - There should be an extra line between paragraphs but not between the header and first paragraph
 - Should be able to scroll down and up with arrows and maintain relative positioning
+
+python3 browser/src/browser.py http://localhost:8000/tests/lab7/page1to2.html
+- Click the link to page 2, it should take you to page 2
+- Click the link to page 1, it should take you back to page 1

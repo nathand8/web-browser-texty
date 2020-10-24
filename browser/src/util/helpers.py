@@ -17,3 +17,7 @@ def relative_url(url, current):
         return "/".join(current.split("/")[:3]) + url
     else:
         return current.rsplit("/", 1)[0] + "/" + url
+
+def is_link(node):
+    return isinstance(node, ElementNode) \
+        and node.tag == "a" and "href" in node.attributes
