@@ -108,7 +108,7 @@ class InlineLayout:
     def __init__(self, node, parent):
         self.node = node
         self.parent = parent
-        self.children = []
+        self.children = [LineLayout(self.node, self)]
 
         self.x = -1
         self.y = -1
@@ -122,22 +122,19 @@ class InlineLayout:
     def layout(self):
         self.w = self.parent.w - self.parent.pl - self.parent.pr \
             - self.parent.bl - self.parent.br
-        self.display_list = []
 
-        self.cx = self.x
         self.cy = self.y
-        self.weight = "normal"
-        self.style = "roman"
-        self.size = 16
 
-        self.line = []
         self.recurse(self.node)
         self.flush()
         self.h = self.cy - self.y
+
+        # Get rid of one extra line at the end
+        self.children.pop()
     
     def draw(self, to):
-        for x, y, word, font, color in self.display_list:
-            to.append(DrawText(x, y, word, font, color))
+        for line in self.children:
+            line.draw(to)
     
     def recurse(self, node):
         if isinstance(node, TextNode):
@@ -146,42 +143,81 @@ class InlineLayout:
             for child in node.children:
                 self.recurse(child)
     
-    def font(self, node):
-        bold = node.style["font-weight"]
-        italic = node.style["font-style"]
-        if italic == "normal": italic = "roman"
-        size = int(px(node.style.get("font-size")) * .75)
-        return tkinter.font.Font(size=size, weight=bold, slant=italic)
-    
     def text(self, node):
-        font = self.font(node)
-        color = node.style["color"]
         for word in node.text.split():
-            w = font.measure(word)
-            if self.cx + w >= self.w - HSTEP:
+            child = TextLayout(node, word)
+            child.layout()
+            if self.children[-1].cx + child.w > self.w:
                 self.flush()
-            self.line.append((self.cx, word, font, color))
-            self.cx += w + font.measure(" ")
+            self.children[-1].append(child)
     
     # Called when a new line is needed
     def flush(self):
-        # Align words along the line
-        # Add all those words to the display list
-        # Update the x and y fields
-        if not self.line: return
+        child = self.children[-1]
+        child.x = self.x
+        child.y = self.cy
+        child.layout()
+        self.cy += child.h
+        self.children.append(LineLayout(self.node, self))
 
-        metrics = [font.metrics() for x, word, font, color in self.line]
+class LineLayout:
+    def __init__(self, node, parent):
+        self.node = node
+        self.parent = parent
+        self.children = []
+        self.cx = 0
+    
+    def append(self, child):
+        self.children.append(child)
+        child.parent = self
+        self.cx += child.w + child.font.measure(" ")
+    
+    def layout(self):
+        self.w = self.parent.w
+
+        if not self.children:
+            self.h = 0
+            return
+
+        for word in self.children:
+            word.layout()
+
+        metrics = [word.font.metrics() for word in self.children]
         max_ascent = max([metric["ascent"] for metric in metrics])
-        baseline = self.cy + 1.2 * max_ascent
+        baseline = self.y + 1.2 * max_ascent
 
-        for x, word, font, color in self.line:
-            y = baseline - font.metrics("ascent")
-            self.display_list.append((x, y, word, font, color))
+        x = self.x
+        for word in self.children:
+            word.y = baseline - word.font.metrics("ascent")
+            word.x = x
+            x += word.w + word.font.measure(" ")
         
-        self.cx = HSTEP
-        self.line = []
-        max_descent = max([metric["descent"] for metric in metrics])
-        self.cy = baseline + 1.2 * max_descent
+        self.h = max([word.h for word in self.children])
+    
+    def draw(self, to):
+        for word in self.children:
+            word.draw(to)
+
+
+class TextLayout:
+    def __init__(self, node, word):
+        self.node = node
+        self.children = []
+        self.word = word
+
+    def layout(self):
+        weight = self.node.style["font-weight"]
+        style = self.node.style["font-style"]
+        if style == "normal": style = "roman"
+        size = int(px(self.node.style["font-size"]) * .75)
+        self.font = tkinter.font.Font(size=size, weight=weight, slant=style)
+
+        self.w = self.font.measure(self.word)
+        self.h = self.font.metrics('linespace')
+    
+    def draw(self, to):
+        color = self.node.style["color"]
+        to.append(DrawText(self.x, self.y, self.word, self.font, color))
 
 
 class DrawText:
