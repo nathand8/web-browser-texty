@@ -16,3 +16,9 @@ python3 browser/src/browser.py http://localhost:8000/tests/lab7/multi_line_parag
 python3 browser/src/browser.py http://localhost:8000/tests/lab7/page1to2.html
 - Click the link to page 2, it should take you to page 2
 - Click the link to page 1, it should take you back to page 1
+- Click on the "back" arrow in the browser chrome, it should take you back to page 2
+
+python3 browser/src/browser.py http://localhost:8000/tests/lab7/page1to2.html
+- Click on the chrome url and type in "http://localhost:8000/tests/lab7/simple.html" and hit enter
+- The window should show a "Header 1" and "Paragraph 1
+- Click on the "back" arrow in the browser chrome, it should take you back to page 1

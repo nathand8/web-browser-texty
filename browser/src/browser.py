@@ -23,11 +23,16 @@ class Browser:
         self.window.bind("<Down>", self.scrolldown)
         self.window.bind("<Configure>", self.windowresize)
         self.window.bind("<Button-1>", self.handle_click)
+        self.window.bind("<Key>", self.keypress)
+        self.window.bind("<Return>", self.pressenter)
         self.width = WIDTH
         self.height = HEIGHT
         self.hstep = HSTEP
         self.vstep = VSTEP
         self.scroll_step = SCROLL_STEP
+        self.history = []
+        self.focus = None
+        self.address_bar = ""
 
         # http://www.zggdwx.com/
     
@@ -48,16 +53,36 @@ class Browser:
         self.height = e.height
         self.layout()
     
+    def keypress(self, e):
+        if self.focus == "address bar":
+            if len(e.char) == 1 and 0x20 <= ord(e.char) < 0x7f:
+                self.address_bar += e.char
+                self.render()
+    
+    def pressenter(self, e):
+        if self.focus == "address bar":
+            self.focus = None
+            self.load(self.address_bar)
+    
     def handle_click(self, e):
-        x, y = e.x, e.y + self.scroll
-        obj = find_layout(x, y, self.document)
-        if not obj: return
-        elt = obj.node
-        while elt and not is_link(elt):
-            elt = elt.parent
-        if elt:
-            url = relative_url(elt.attributes["href"], self.url)
-            self.load(url)
+        self.focus = None
+        if e.y < 60: # Browser chrome
+            if 10 <= e.x < 35 and 10 <= e.y < 50:
+                self.go_back()
+            elif 50 <= e.x < 790 and 10 <= e.y < 50:
+                self.focus = "address bar"
+                self.address_bar = ""
+                self.render()
+        else:
+            x, y = e.x, e.y + self.scroll - 60
+            obj = find_layout(x, y, self.document)
+            if not obj: return
+            elt = obj.node
+            while elt and not is_link(elt):
+                elt = elt.parent
+            if elt:
+                url = relative_url(elt.attributes["href"], self.url)
+                self.load(url)
     
     def layout(self, tree=None):
         if not tree:
@@ -74,14 +99,28 @@ class Browser:
     
     def render(self):
         self.canvas.delete("all")
-        # self.canvas.create_text(200, 100, text="Hi!", font=self.font, anchor='nw')
         for cmd in self.display_list:
-            if cmd.y1 > self.scroll + self.height: continue
+            if cmd.y1 > self.scroll + self.height - 60: continue
             if cmd.y2 < self.scroll: continue
-            cmd.draw(self.scroll, self.canvas)
+            cmd.draw(self.scroll - 60, self.canvas)
+
+        self.canvas.create_rectangle(0, 0, 800, 60, width=0, fill='light gray')
+    
+        self.canvas.create_rectangle(50, 10, 790, 50)
+        font = tkinter.font.Font(family="Courier", size=30)
+        self.canvas.create_text(55, 15, anchor='nw', text=self.address_bar, font=font)
+
+        self.canvas.create_rectangle(10, 10, 35, 50)
+        self.canvas.create_polygon(15, 30, 30, 15, 30, 45, fill='black')
+
+        if self.focus == "address bar":
+            w = font.measure(self.address_bar)
+            self.canvas.create_line(55 + w, 15, 55 + w, 45)
 
     def load(self, url):
+        self.address_bar = url
         self.url = url
+        self.history.append(url)
         header, body = request(url)
         nodes = parse(lex(body))
 
@@ -96,6 +135,12 @@ class Browser:
         rules.sort(key=lambda selector_body: selector_body[0].priority(), reverse=True)
         style(nodes, None, rules)
         self.layout(nodes)
+    
+    def go_back(self):
+        if len(self.history) > 2:
+            self.history.pop()
+            back = self.history.pop()
+            self.load(back)
 
         
 INHERITED_PROPERTIES = {
