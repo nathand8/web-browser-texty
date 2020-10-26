@@ -137,11 +137,21 @@ class InlineLayout:
             line.draw(to)
     
     def recurse(self, node):
-        if isinstance(node, TextNode):
-            self.text(node)
+        if isinstance(node, ElementNode):
+            if node.tag == "input":
+                self.input(node)
+            else:
+                for child in node.children:
+                    self.recurse(child)
         else:
-            for child in node.children:
-                self.recurse(child)
+            self.text(node)
+    
+    def input(self, node):
+        child = InputLayout(node)
+        child.layout()
+        if self.children[-1].cx + child.w > self.w:
+            self.flush()
+        self.children[-1].append(child)
     
     def text(self, node):
         for word in node.text.split():
@@ -218,6 +228,30 @@ class TextLayout:
     def draw(self, to):
         color = self.node.style["color"]
         to.append(DrawText(self.x, self.y, self.word, self.font, color))
+
+class InputLayout: 
+    def __init__(self, node):
+        self.node = node
+        self.children = []
+    
+    def layout(self):
+        self.w = 200
+        self.h = 20
+
+        weight = self.node.style["font-weight"]
+        style = self.node.style["font-style"]
+        if style == "normal": style = "roman"
+        size = int(px(self.node.style["font-size"]) * .75)
+        self.font = tkinter.font.Font(size=size, weight=weight, slant=style)
+    
+    def draw(self, to):
+        x1, x2 = self.x, self.x + self.w
+        y1, y2 = self.y, self.y + self.h
+        to.append(DrawRect(x1, y1, x2, y2, "light gray"))
+
+        text = self.node.attributes.get("value", "")
+        color = self.node.style["color"]
+        to.append(DrawText(self.x, self.y, text, self.font, color))
 
 
 class DrawText:
