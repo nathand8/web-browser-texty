@@ -1,10 +1,10 @@
 import tkinter
 from src.connection import request
 from src.lexer import lex
-from src.layout import DocumentLayout, VSTEP, HSTEP, WIDTH, HEIGHT, find_layout
+from src.layout import DocumentLayout, VSTEP, HSTEP, WIDTH, HEIGHT, find_layout, InputLayout
 from src.parser import parse, tree_to_string, ElementNode, TextNode
 from src.css_parser import CSSParser
-from src.util.helpers import find_links, relative_url, is_link
+from src.util.helpers import find_links, relative_url, is_link, find_inputs
 
 SCROLL_STEP = 40
 
@@ -54,10 +54,16 @@ class Browser:
         self.layout()
     
     def keypress(self, e):
-        if self.focus == "address bar":
-            if len(e.char) == 1 and 0x20 <= ord(e.char) < 0x7f:
-                self.address_bar += e.char
-                self.render()
+        if not (len(e.char) == 1 and 0x20 <= ord(e.char) < 0x7f):
+            return
+        if not self.focus:
+            return
+        elif self.focus == "address bar":
+            self.address_bar += e.char
+            self.render()
+        else:
+            self.focus.node.attributes["value"] += e.char
+            self.layout(self.document.node)
     
     def pressenter(self, e):
         if self.focus == "address bar":
@@ -78,11 +84,35 @@ class Browser:
             obj = find_layout(x, y, self.document)
             if not obj: return
             elt = obj.node
-            while elt and not is_link(elt):
+            while elt:
+                if isinstance(elt, TextNode):
+                    pass
+                elif is_link(elt):
+                    url = relative_url(elt.attributes["href"], self.url)
+                    self.load(url)
+                elif elt.tag == "input":
+                    elt.attributes["value"] = ""
+                    self.focus = obj
+                    self.layout(self.document.node)
+                elif elt.tag == "button":
+                    self.submit_form(elt)
                 elt = elt.parent
-            if elt:
-                url = relative_url(elt.attributes["href"], self.url)
-                self.load(url)
+
+    def submit_form(self, elt):
+        while elt and elt.tag != "form":
+            elt = elt.parent
+        if not elt: return
+        inputs = find_inputs(elt, [])
+        body = ""
+        for input in inputs:
+            name = input.attributes["name"]
+            value = input.attributes.get("value", "")
+            body += "&" + name + "=" + value.replace(" ", "%20")
+        body = body[1:]
+    
+        url = relative_url(elt.attributes["action"], self.url)
+        self.load(url, body=body)
+
     
     def layout(self, tree=None):
         if not tree:
@@ -116,12 +146,17 @@ class Browser:
         if self.focus == "address bar":
             w = font.measure(self.address_bar)
             self.canvas.create_line(55 + w, 15, 55 + w, 45)
+        elif isinstance(self.focus, InputLayout):
+            text = self.focus.node.attributes.get("value", "")
+            x = self.focus.x + self.focus.font.measure(text)
+            y = self.focus.y - self.scroll + 60
+            self.canvas.create_line(x, y, x, y + self.focus.h)
 
-    def load(self, url):
+    def load(self, url, body=None):
         self.address_bar = url
         self.url = url
         self.history.append(url)
-        header, body = request(url)
+        header, body = request(url, body)
         nodes = parse(lex(body))
 
         with open("browser/src/browser.css") as f:

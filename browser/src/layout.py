@@ -140,6 +140,8 @@ class InlineLayout:
         if isinstance(node, ElementNode):
             if node.tag == "input":
                 self.input(node)
+            elif node.tag == "button":
+                self.input(node)
             else:
                 for child in node.children:
                     self.recurse(child)
@@ -247,9 +249,14 @@ class InputLayout:
     def draw(self, to):
         x1, x2 = self.x, self.x + self.w
         y1, y2 = self.y, self.y + self.h
-        to.append(DrawRect(x1, y1, x2, y2, "light gray"))
+        bgcolor = "light gray" if self.node.tag == "input" else "yellow"
+        to.append(DrawRect(x1, y1, x2, y2, bgcolor))
 
-        text = self.node.attributes.get("value", "")
+        if self.node.tag == "input":
+            text = self.node.attributes.get("value", "")
+        else:
+            text = self.node.children[0].text
+
         color = self.node.style["color"]
         to.append(DrawText(self.x, self.y, text, self.font, color))
 

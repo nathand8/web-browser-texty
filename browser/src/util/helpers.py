@@ -21,3 +21,11 @@ def relative_url(url, current):
 def is_link(node):
     return isinstance(node, ElementNode) \
         and node.tag == "a" and "href" in node.attributes
+
+def find_inputs(elt, out):
+    if not isinstance(elt, ElementNode): return
+    if elt.tag == "input" and "name" in elt.attributes:
+        out.append(elt)
+    for child in elt.children:
+        find_inputs(child, out)
+    return out

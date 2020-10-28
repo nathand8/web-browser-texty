@@ -48,17 +48,25 @@ def parseHTTPResponse(response):
     html = response.read()
     return status, headers, html
     
-def request(url):
+def request(url, payload=None):
     scheme, host, port, path = splitURL(url)
+    method = "POST" if payload else "GET"
     encrypted = scheme == "https"
     es = EnhancedSocket()
     es.connect(host, port, encrypted=encrypted)
-    es.sendLines([
-        "GET {} HTTP/1.1".format(path),
+    lines = [
+        "{} {} HTTP/1.1".format(method, path),
         "Host: {}".format(host),
         "User-Agent: CS-6968-UofU",
-        "Connection: close"
-    ])
+        "Connection: close",
+    ]
+    if payload:
+        content_length = len(payload.encode("utf8"))
+        lines += [
+            "Content-Length: {}\r\n".format(content_length),
+            "" + (payload or "")
+        ]
+    es.sendLines(lines)
     response = es.makefile()
     status, headers, html = parseHTTPResponse(response)
     es.close()

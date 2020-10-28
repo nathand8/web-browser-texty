@@ -9,3 +9,5 @@ python3 browser/src/browser.py http://localhost:8000/tests/lab8/inline_input.htm
 
 python3 browser/src/browser.py http://localhost:8000/tests/lab8/placeholder_input.html
 - The input element should come pre-populated with the value "Placeholder" in the gray box
+- Click on the gray box and all the text should disappear
+- Typing, the text should show up in the gray box

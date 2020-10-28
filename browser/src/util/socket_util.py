@@ -25,7 +25,10 @@ class EnhancedSocket:
 
     # Takes a list of lines and sends them over the socket
     def sendLines(self, lines):
-        self.s.send((SOCKET_NEWLINE.join(lines) + SOCKET_NEWLINE + SOCKET_NEWLINE).encode(SOCKET_ENCODING))
+        raw = (SOCKET_NEWLINE.join(lines) + SOCKET_NEWLINE + SOCKET_NEWLINE).encode(SOCKET_ENCODING)
+        print("Sending...")
+        print(raw)
+        self.s.send(raw)
         return
 
     # Read from the socket to a file-like object
