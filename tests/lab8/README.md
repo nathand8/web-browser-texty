@@ -11,3 +11,9 @@ python3 browser/src/browser.py http://localhost:8000/tests/lab8/placeholder_inpu
 - The input element should come pre-populated with the value "Placeholder" in the gray box
 - Click on the gray box and all the text should disappear
 - Typing, the text should show up in the gray box
+
+Start the web server `python3 server/src/server.py`
+Open `http://localhost:8000/` in Chrome
+- Make sure the web page pulls up and you can see the text "Guestbook"
+- Try adding a couple entries and make sure it pulls up
+- Open that URL using the toy browser and make sure it has the same functionality
