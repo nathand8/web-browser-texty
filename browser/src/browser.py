@@ -69,6 +69,8 @@ class Browser:
         if self.focus == "address bar":
             self.focus = None
             self.load(self.address_bar)
+        elif isinstance(self.focus, InputLayout):
+            self.submit_form(self.focus.node)
     
     def handle_click(self, e):
         self.focus = None
