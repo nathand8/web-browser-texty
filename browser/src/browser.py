@@ -1,10 +1,11 @@
 import tkinter
+import dukpy
 from src.connection import request
 from src.lexer import lex
 from src.layout import DocumentLayout, VSTEP, HSTEP, WIDTH, HEIGHT, find_layout, InputLayout
 from src.parser import parse, tree_to_string, ElementNode, TextNode
 from src.css_parser import CSSParser
-from src.util.helpers import find_links, relative_url, is_link, find_inputs
+from src.util.helpers import find_links, find_scripts, relative_url, is_link, find_inputs
 
 SCROLL_STEP = 40
 
@@ -63,6 +64,7 @@ class Browser:
             self.render()
         else:
             self.focus.node.attributes["value"] += e.char
+            self.dispatch_event("change", self.focus.node)
             self.layout(self.document.node)
     
     def pressenter(self, e):
@@ -86,6 +88,7 @@ class Browser:
             obj = find_layout(x, y, self.document)
             if not obj: return
             elt = obj.node
+            if elt: self.dispatch_event("click", elt)
             while elt:
                 if isinstance(elt, TextNode):
                     pass
@@ -104,6 +107,7 @@ class Browser:
         while elt and elt.tag != "form":
             elt = elt.parent
         if not elt: return
+        self.dispatch_event("submit", elt)
         inputs = find_inputs(elt, [])
         body = ""
         for input in inputs:
@@ -121,6 +125,7 @@ class Browser:
             tree = self.cached_tree
         else:
             self.cached_tree = tree
+        style(tree, None, self.rules)
         self.document = DocumentLayout(tree)
         self.document.layout(width=self.width)
         self.max_y = self.document.h
@@ -161,25 +166,85 @@ class Browser:
         self.url = url
         self.history.append(url)
         header, body = request(url, body)
-        nodes = parse(lex(body))
+        self.nodes = parse(lex(body))
 
         with open("browser/src/browser.css") as f:
             browser_style = f.read()
             rules = CSSParser(browser_style).parse()
-        for link in find_links(nodes, []):
+        for link in find_links(self.nodes, []):
             header, body = request(relative_url(link, url))
             rules.extend(CSSParser(body).parse())
         
-        # tree_to_string(nodes)
+        # tree_to_string(self.nodes)
         rules.sort(key=lambda selector_body: selector_body[0].priority(), reverse=True)
-        style(nodes, None, rules)
-        self.layout(nodes)
+        self.rules = rules
+        self.setup_js()
+        for script in find_scripts(self.nodes, []):
+            header, body = request(relative_url(script, self.history[-1]))
+            try:
+                print("Script returned: ", self.js_environment.evaljs(body))
+            except dukpy.JSRuntimeError as e:
+                print("Script", script, "crashed", e)
+        self.layout(self.nodes)
     
     def go_back(self):
         if len(self.history) > 2:
             self.history.pop()
             back = self.history.pop()
             self.load(back)
+        
+    def setup_js(self):
+        self.node_to_handle = {}
+        self.handle_to_node = {}
+        self.js_environment = dukpy.JSInterpreter()
+        self.js_environment.export_function("log", print)
+        self.js_environment.export_function("querySelectorAll", self.js_querySelectorAll)
+        self.js_environment.export_function("getAttribute", self.js_getAttribute)
+        self.js_environment.export_function("innerHTML", self.js_innerHTML)
+        with open("browser/src/runtime.js") as f:
+            self.js_environment.evaljs(f.read())
+
+    def js_querySelectorAll(self, sel):
+        selector, _ = CSSParser(sel + "{").selector(0)
+        elts = find_selected(self.nodes, selector, [])
+        return [self.make_handle(elt) for elt in elts]
+    
+    def make_handle(self, elt):
+        if id(elt) not in self.node_to_handle:
+            handle = len(self.node_to_handle)
+            self.node_to_handle[id(elt)] = handle
+            self.handle_to_node[handle] = elt
+        else:
+            handle = self.node_to_handle[id(elt)]
+        return handle
+    
+    def js_getAttribute(self, handle, attr):
+        elt = self.handle_to_node[handle]
+        return elt.attributes.get(attr, None)
+    
+    def js_innerHTML(self, handle, s):
+        print("adding html", s)
+        doc = parse(lex("<html><body>" + s + "</body></html>"))
+        new_nodes = doc.children[0].children
+        elt = self.handle_to_node[handle]
+        elt.children = new_nodes
+        for child in elt.children:
+            child.parent = elt
+        self.layout(self.nodes)
+
+    def dispatch_event(self, type, elt):
+        handle = self.make_handle(elt)
+        code = "__runHandlers({}, \"{}\")".format(handle, type)
+        self.js_environment.evaljs(code)
+
+
+def find_selected(node, sel, out):
+    if not isinstance(node, ElementNode): return
+    if sel.matches(node):
+        out.append(node)
+    for child in node.children:
+        find_selected(child, sel, out)
+    return out
 
         
 INHERITED_PROPERTIES = {

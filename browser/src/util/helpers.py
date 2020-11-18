@@ -10,6 +10,15 @@ def find_links(node, lst):
         find_links(child, lst)
     return lst
 
+def find_scripts(node, out):
+    if not isinstance(node, ElementNode): return
+    if node.tag == "script" and \
+       "src" in node.attributes:
+        out.append(node.attributes["src"])
+    for child in node.children:
+        find_scripts(child, out)
+    return out
+
 def relative_url(url, current):
     if "://" in url:
         return url
