@@ -132,8 +132,10 @@ class Browser:
     def render(self):
         self.canvas.delete("all")
         for cmd in self.display_list:
-            if cmd.y1 > self.scroll + self.height - 60: continue
-            if cmd.y2 < self.scroll: continue
+            if cmd.y1 > self.scroll + self.height - 60:
+                continue
+            if cmd.y2 < self.scroll:
+                continue
             cmd.draw(self.scroll - 60, self.canvas)
 
         self.canvas.create_rectangle(0, 0, 800, 60, width=0, fill='light gray')

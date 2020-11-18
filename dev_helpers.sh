@@ -4,6 +4,7 @@ alias serve="python -m http.server 8000"
 echo "python3 browser/src/browser.py https://browser.engineering/draft/html.html"
 echo "pytest -sv browser/src/tests/test_parser.py"
 echo "python -m http.server 8000"
+echo "python3 server/server.py     // (port 8000)"
 echo "alias 'serve'"
 
 dev_environment
