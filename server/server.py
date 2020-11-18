@@ -35,13 +35,8 @@ def handle_connection(conx):
 
 ENTRIES = [ 'Pavel was here' ]
 
-def show_comments():
-    out = "<!doctype html>"
-
-    out += "<form action=add method=post>"
-    out +=   "<p>Name:<input name=guest></p>"
-    out +=   "<p><button>Sign the book!</button></p>"
-    out += "</form>"
+def show_comments(page):
+    out = page
 
     for entry in ENTRIES:
         out += "<p>" + entry + "</p>"
@@ -62,7 +57,14 @@ def handle_request(method, url, headers, body):
         else:
             return show_comments()
     else:
-        return show_comments()
+        if url == "/comment.js":
+            with open("comment.js") as f:
+                return f.read()
+        if url == "/comment.css":
+            with open("comment.css") as f:
+                return f.read()
+        with open("comment.html") as f:
+            return show_comments(f.read())
 
 
 def form_decode(body):
