@@ -33,3 +33,9 @@ python3 browser/src/browser.py http://localhost:8000/tests/lab9/simple_character
 python3 browser/src/browser.py http://localhost:8001/tests/lab9/inner_html.html
 - Should display the text "This is my new bit of content!"
 - The word "new" should be bold
+
+run `python3 server.py` from "/server"
+run `python3 browser/src/browser.py http://localhost:8000/`
+- The guestbook should display with one entry
+- Add a single short entry like "test". It should appear at the bottom on page refresh
+- Add text to the textbox that is > 20 characters. A warning in red text should appear. The form should not be submitted when clicking the submit button.

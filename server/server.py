@@ -35,8 +35,9 @@ def handle_connection(conx):
 
 ENTRIES = [ 'Pavel was here' ]
 
-def show_comments(page):
-    out = page
+def show_comments():
+    with open("comment.html") as f:
+        out = f.read()
 
     for entry in ENTRIES:
         out += "<p>" + entry + "</p>"
@@ -44,7 +45,7 @@ def show_comments(page):
 
 
 def add_entry(params):
-    if 'guest' in params:
+    if 'guest' in params and len(params['guest']) <= 100:
         ENTRIES.append(params['guest'])
     return show_comments()
 
@@ -63,8 +64,7 @@ def handle_request(method, url, headers, body):
         if url == "/comment.css":
             with open("comment.css") as f:
                 return f.read()
-        with open("comment.html") as f:
-            return show_comments(f.read())
+        return show_comments()
 
 
 def form_decode(body):

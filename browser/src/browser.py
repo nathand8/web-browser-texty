@@ -88,7 +88,7 @@ class Browser:
             obj = find_layout(x, y, self.document)
             if not obj: return
             elt = obj.node
-            if elt: self.dispatch_event("click", elt)
+            if elt and self.dispatch_event("click", elt): return
             while elt:
                 if isinstance(elt, TextNode):
                     pass
@@ -107,7 +107,7 @@ class Browser:
         while elt and elt.tag != "form":
             elt = elt.parent
         if not elt: return
-        self.dispatch_event("submit", elt)
+        if self.dispatch_event("submit", elt): return
         inputs = find_inputs(elt, [])
         body = ""
         for input in inputs:
@@ -182,7 +182,8 @@ class Browser:
         for script in find_scripts(self.nodes, []):
             header, body = request(relative_url(script, self.history[-1]))
             try:
-                print("Script returned: ", self.js_environment.evaljs(body))
+                # print("Script returned: ", self.js_environment.evaljs(body))
+                self.js_environment.evaljs(body)
             except dukpy.JSRuntimeError as e:
                 print("Script", script, "crashed", e)
         self.layout(self.nodes)
@@ -223,7 +224,6 @@ class Browser:
         return elt.attributes.get(attr, None)
     
     def js_innerHTML(self, handle, s):
-        print("adding html", s)
         doc = parse(lex("<html><body>" + s + "</body></html>"))
         new_nodes = doc.children[0].children
         elt = self.handle_to_node[handle]
@@ -235,7 +235,8 @@ class Browser:
     def dispatch_event(self, type, elt):
         handle = self.make_handle(elt)
         code = "__runHandlers({}, \"{}\")".format(handle, type)
-        self.js_environment.evaljs(code)
+        do_default = self.js_environment.evaljs(code)
+        return not do_default
 
 
 def find_selected(node, sel, out):
