@@ -194,9 +194,7 @@ class Browser:
         self.url = url
         self.history.append(url)
         self.timer.start("Downloading")
-        req_headers = {}
-        if self.cookie_string():
-            req_headers["Cookie"] = self.cookie_string()
+        req_headers = {"Cookie": self.cookie_string()}
         headers, body = request(url, headers=req_headers, payload=body)
         if "set-cookie" in headers:
             kv, *params = headers["set-cookie"].split(";")
