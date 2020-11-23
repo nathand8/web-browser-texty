@@ -136,9 +136,11 @@ class Browser:
         self.timer.start("Style")
         style(tree, None, self.rules)
 
-        self.timer.start("Layout")
+        self.timer.start("Layout (phase 1)")
         self.document = DocumentLayout(tree)
-        self.document.layout(width=self.width)
+        self.document.size()
+        self.timer.start("Layout (phase 2)")
+        self.document.position()
         self.max_y = self.document.h
 
         self.timer.start("Display List")
