@@ -200,14 +200,18 @@ class LineLayout:
         self.max_descent = max([metric["descent"] for metric in self.metrics])
         self.h = 1.2 * (self.max_descent + self.max_ascent)
         # print(INDENT * get_depth(self) + "LineLayout size: w", self.w, ", h", self.h)
+
+        cx = 0
+        self.cxs = []
+        for child in self.children:
+            self.cxs.append(cx)
+            cx += child.w + child.font.measure(" ")
     
     def position(self):
         baseline = self.y + 1.2 * self.max_ascent
-        cx = 0
-        for child, metrics in zip(self.children, self.metrics):
+        for cx, child, metrics in zip(self.cxs, self.children, self.metrics):
             child.x = self.x + cx
             child.y = baseline - metrics["ascent"]
-            cx += child.w + child.font.measure(" ")
     
     def draw(self, to):
         for word in self.children:
