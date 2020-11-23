@@ -29,7 +29,7 @@ class DocumentLayout:
         child = BlockLayout(self.node, self)
         self.children.append(child)
         child.size()
-        self.h = child.h
+        self.compute_height()
         # print(INDENT * get_depth(self) + "DocumentLayout size: w", self.w, ", h", self.h)
     
     def position(self):
@@ -37,6 +37,9 @@ class DocumentLayout:
         child.x = self.x = 3 # For some reason the letters are getting cut off on the far left when we start at 0
         child.y = self.y = 0
         child.position()
+    
+    def compute_height(self):
+        self.h = self.children[0].h
     
     def draw(self, to):
         self.children[0].draw(to)
@@ -74,12 +77,16 @@ class BlockLayout:
             - self.parent.bl - self.parent.br \
             - self.ml - self.mr
 
-        self.h = 0
         for child in self.children:
             child.size()
-            self.h += child.mt + child.h + child.mb
-
+        
+        self.compute_height()
         # print(INDENT * get_depth(self) + "BlockLayout size: w", self.w, ", h", self.h)
+    
+    def compute_height(self):
+        self.h = 0
+        for child in self.children:
+            self.h += child.mt + child.h + child.mb
     
     def position(self):
         self.y += self.mt
@@ -129,8 +136,8 @@ class InlineLayout:
         self.h = 0
         self.recurse(self.node)
         self.flush()
-        # Get rid of one extra line at the end
-        self.children.pop()
+        self.children.pop() # Get rid of one extra line at the end
+        self.compute_height()
         # print(INDENT * get_depth(self) + "InlineLayout size: w", self.w, ", h", self.h)
     
     def draw(self, to):
@@ -167,8 +174,12 @@ class InlineLayout:
     def flush(self):
         child = self.children[-1]
         child.size()
-        self.h += child.h
         self.children.append(LineLayout(self.node, self))
+    
+    def compute_height(self):
+        self.h = 0
+        for child in self.children:
+            self.h += child.h
     
     def position(self):
         cy = self.y
@@ -192,6 +203,9 @@ class LineLayout:
 
     def size(self):
         self.w = self.parent.w
+        self.compute_height()
+    
+    def compute_height(self):
         if not self.children:
             self.h = 0
             return
@@ -232,6 +246,9 @@ class TextLayout:
         self.font = tkinter.font.Font(size=size, weight=weight, slant=style)
 
         self.w = self.font.measure(self.word)
+        self.compute_height()
+    
+    def compute_height(self):
         self.h = self.font.metrics('linespace')
 
     def position(self):
@@ -248,13 +265,16 @@ class InputLayout:
     
     def size(self):
         self.w = 200
-        self.h = 20
+        self.compute_height()
 
         weight = self.node.style["font-weight"]
         style = self.node.style["font-style"]
         if style == "normal": style = "roman"
         size = int(px(self.node.style["font-size"]) * .75)
         self.font = tkinter.font.Font(size=size, weight=weight, slant=style)
+
+    def compute_height(self):
+        self.h = 20
 
     def position(self):
         return
