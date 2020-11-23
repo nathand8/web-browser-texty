@@ -36,6 +36,7 @@ class Browser:
         self.focus = None
         self.address_bar = ""
         self.timer = Timer()
+        self.cookies = {}
 
         # http://www.zggdwx.com/
     
@@ -181,13 +182,26 @@ class Browser:
             x = self.focus.x + self.focus.font.measure(text)
             y = self.focus.y - self.scroll + 60
             self.canvas.create_line(x, y, x, y + self.focus.h)
+    
+    def cookie_string(self):
+        cookie_string = ""
+        for key, value in self.cookies.items():
+            cookie_string += "&" + key + "=" + value
+        return cookie_string[1:]
 
     def load(self, url, body=None):
         self.address_bar = url
         self.url = url
         self.history.append(url)
         self.timer.start("Downloading")
-        header, body = request(url, body)
+        req_headers = {}
+        if self.cookie_string():
+            req_headers["Cookie"] = self.cookie_string()
+        headers, body = request(url, headers=req_headers, payload=body)
+        if "set-cookie" in headers:
+            kv, *params = headers["set-cookie"].split(";")
+            key, value = kv.split("=", 1)
+            self.cookies[key] = value
         self.timer.start("Parsing HTML")
         self.nodes = parse(lex(body))
 
@@ -196,7 +210,7 @@ class Browser:
             browser_style = f.read()
             rules = CSSParser(browser_style).parse()
         for link in find_links(self.nodes, []):
-            header, body = request(relative_url(link, url))
+            headers, body = request(relative_url(link, url), headers=req_headers)
             rules.extend(CSSParser(body).parse())
 
         # tree_to_string(self.nodes)
@@ -206,7 +220,7 @@ class Browser:
         self.timer.start("Running JS")
         self.setup_js()
         for script in find_scripts(self.nodes, []):
-            header, body = request(relative_url(script, self.history[-1]))
+            header, body = request(relative_url(script, self.history[-1]), headers=req_headers)
             try:
                 # print("Script returned: ", self.js_environment.evaljs(body))
                 self.js_environment.evaljs(body)

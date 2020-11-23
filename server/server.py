@@ -1,4 +1,5 @@
 import socket
+import sys
 
 def handle_connection(conx):
     # Read the Opening Lines
@@ -23,48 +24,94 @@ def handle_connection(conx):
         body = None
 
     # Handle the Request
-    body = handle_request(method, url, headers, body)
+    body, headers = handle_request(method, url, headers, body)
 
     # Send the response
     response = "HTTP/1.0 200 OK\r\n"
     response += "Content-Length: {}\r\n".format(len(body.encode("utf8")))
+    for header, value in headers.items():
+        response += "{}: {}\r\n".format(header, value)
     response += "\r\n" + body
     conx.send(response.encode('utf8'))
     conx.close()
 
 
-ENTRIES = [ 'Pavel was here' ]
+LOGINS = { "bob": "123", "jon": "qwe" }
 
-def show_comments():
-    with open("comment.html") as f:
-        out = f.read()
+def check_login(username, pw):
+    return username in LOGINS and LOGINS[username] == pw
 
-    for entry in ENTRIES:
-        out += "<p>" + entry + "</p>"
+def parse_cookies(s):
+    out = {}
+    for cookie in s.split(";"):
+        if "=" in cookie:
+            k, v = cookie.strip().split("=", 1)
+            out[k] = v
+    return out
+
+ENTRIES = [
+    ('Pavel was here', 'bob'),
+    ('Until next time', 'jon'),
+]
+
+def show_comments(username):
+    out = """
+    <!doctype html><html>
+    <script src=/comment.js></script>
+    <link rel=stylesheet href=/comment.css>"""
+    if username:
+        out += """
+        <form action=add method=post>
+            <p>Message:<input name=guest></p>
+            <p><button>Sign the book!</button></p>
+        </form>"""
+    else:
+        out += "<p><a href=/login>Log in to add to the guest list</a></p>"
+
+    out += "<p id=errors></p>"
+
+    for entry, who in ENTRIES:
+        out += '<p>' + entry + " <i>from " + who + '</i></p>'
     return out
 
 
-def add_entry(params):
+def add_entry(params, username):
     if 'guest' in params and len(params['guest']) <= 100:
-        ENTRIES.append(params['guest'])
-    return show_comments()
+        ENTRIES.append((params['guest'], username))
+    return show_comments(username)
 
 
 def handle_request(method, url, headers, body):
-    if method == 'POST':
+    resp_headers = {}
+    out = ""
+    username = None
+    if "cookie" in headers:
+        username = parse_cookies(headers["cookie"]).get("username")
+    
+    if method == "POST":
         params = form_decode(body)
-        if url == '/add':
-            return add_entry(params)
+        if url == "/":
+            if check_login(params.get("username"), params.get("password")):
+                username = params["username"]
+                resp_headers["Set-Cookie"] = "username=" + username
+            out = show_comments(username)
+        elif url == '/add':
+            out = add_entry(params, username)
         else:
-            return show_comments()
+            out = show_comments(username)
     else:
-        if url == "/comment.js":
+        if url == "/login":
+            with open("login.html") as f:
+                out = f.read()
+        elif url == "/comment.js":
             with open("comment.js") as f:
-                return f.read()
-        if url == "/comment.css":
+                out = f.read()
+        elif url == "/comment.css":
             with open("comment.css") as f:
-                return f.read()
-        return show_comments()
+                out = f.read()
+        else:
+            out = show_comments(username)
+    return out, resp_headers
 
 
 def form_decode(body):
@@ -80,8 +127,11 @@ if __name__ == "__main__":
         type=socket.SOCK_STREAM,
         proto=socket.IPPROTO_TCP,
     )
+    port = 8000
+    if len(sys.argv) > 1:
+        port = int(sys.argv[1])
 
-    s.bind(('', 8000))
+    s.bind(('', port))
     s.listen()
 
     while True:

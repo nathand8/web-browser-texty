@@ -48,7 +48,7 @@ def parseHTTPResponse(response):
     html = response.read()
     return status, headers, html
     
-def request(url, payload=None):
+def request(url, headers={}, payload=None):
     scheme, host, port, path = splitURL(url)
     method = "POST" if payload else "GET"
     encrypted = scheme == "https"
@@ -58,8 +58,10 @@ def request(url, payload=None):
         "{} {} HTTP/1.1".format(method, path),
         "Host: {}".format(host),
         "User-Agent: CS-6968-UofU",
-        "Connection: close",
     ]
+    for header, value in headers.items():
+        lines.append("{}: {}".format(header, value))
+    lines.append("Connection: close")
     if payload:
         content_length = len(payload.encode("utf8"))
         lines += [
