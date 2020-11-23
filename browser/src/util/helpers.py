@@ -24,6 +24,10 @@ def relative_url(url, current):
         return url
     elif url.startswith("/"):
         return "/".join(current.split("/")[:3]) + url
+    elif url.startswith("../"):
+        new_url = url.split('/', 1)[1]
+        new_current = current.rsplit("/", 2)[0] + "/"
+        return relative_url(new_url, new_current)
     else:
         return current.rsplit("/", 1)[0] + "/" + url
 
