@@ -71,7 +71,7 @@ class Browser:
             self.focus.node.attributes["value"] += e.char
             self.dispatch_event("change", self.focus.node)
             print("Layout called from keypress")
-            self.layout(self.document.node)
+            self.reflow(self.focus)
     
     def pressenter(self, e):
         if self.focus == "address bar":
@@ -105,7 +105,7 @@ class Browser:
                     elt.attributes["value"] = ""
                     self.focus = obj
                     print("Layout called from handle_click in input elt")
-                    self.layout(self.document.node)
+                    return self.reflow(self.focus)
                 elif elt.tag == "button":
                     self.submit_form(elt)
                 elt = elt.parent
@@ -126,26 +126,26 @@ class Browser:
         url = relative_url(elt.attributes["action"], self.url)
         self.load(url, body=body)
 
-    
     def layout(self, tree=None):
+        self.timer.start("Layout Initialization")
         if not tree:
             tree = self.cached_tree
         else:
             self.cached_tree = tree
-        
-        self.timer.start("Style")
-        style(tree, None, self.rules)
-
-        self.timer.start("Layout (phase 1)")
         self.document = DocumentLayout(tree)
-        self.document.size()
+        self.reflow(self.document)
+    
+    def reflow(self, obj):
+        self.timer.start("Style")
+        style(obj.node, obj.parent, self.rules)
+        self.timer.start("Layout (phase 1)")
+        obj.size()
         self.timer.start("Layout (phase 2)")
         self.document.position()
-        self.max_y = self.document.h
-
         self.timer.start("Display List")
         self.display_list = []
         self.document.draw(self.display_list)
+        self.max_y = self.document.h
         self.render()
     
     def render(self):
@@ -255,7 +255,7 @@ class Browser:
         for child in elt.children:
             child.parent = elt
         print("Layout called from js_innerHTML")
-        self.layout(self.nodes)
+        self.reflow(layout_for_node(self.document, elt))
 
     def dispatch_event(self, type, elt):
         handle = self.make_handle(elt)
@@ -271,6 +271,13 @@ def find_selected(node, sel, out):
     for child in node.children:
         find_selected(child, sel, out)
     return out
+
+def layout_for_node(tree, node):
+    if tree.node == node:
+        return tree
+    for child in tree.children:
+        out = layout_for_node(child, node)
+        if out: return out
 
         
 INHERITED_PROPERTIES = {
