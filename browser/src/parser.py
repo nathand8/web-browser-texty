@@ -32,8 +32,9 @@ def parse(tokens):
     currently_open = []
     for tok in tokens:
         if isinstance(tok, Text):
+            if tok.text.isspace(): continue
+            implicit_tags(tok, currently_open)
             node = TextNode(tok.text, currently_open[-1])
-            if not currently_open: continue
             currently_open[-1].children.append(node)
         elif tok.tag.startswith("!"):
             continue

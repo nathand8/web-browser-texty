@@ -6,6 +6,7 @@ from src.layout import DocumentLayout, VSTEP, HSTEP, WIDTH, HEIGHT, find_layout,
 from src.parser import parse, tree_to_string, ElementNode, TextNode
 from src.css_parser import CSSParser
 from src.util.helpers import find_links, find_scripts, relative_url, is_link, find_inputs
+from src.timer import Timer
 
 SCROLL_STEP = 40
 
@@ -34,6 +35,7 @@ class Browser:
         self.history = []
         self.focus = None
         self.address_bar = ""
+        self.timer = Timer()
 
         # http://www.zggdwx.com/
     
@@ -50,8 +52,11 @@ class Browser:
         self.render()
     
     def windowresize(self, e):
+        if e.width < 10: return
+        if e.width == self.width and e.height == self.height: return
         self.width = e.width
         self.height = e.height
+        print("Layout called from windowresize")
         self.layout()
     
     def keypress(self, e):
@@ -65,6 +70,7 @@ class Browser:
         else:
             self.focus.node.attributes["value"] += e.char
             self.dispatch_event("change", self.focus.node)
+            print("Layout called from keypress")
             self.layout(self.document.node)
     
     def pressenter(self, e):
@@ -98,6 +104,7 @@ class Browser:
                 elif elt.tag == "input":
                     elt.attributes["value"] = ""
                     self.focus = obj
+                    print("Layout called from handle_click in input elt")
                     self.layout(self.document.node)
                 elif elt.tag == "button":
                     self.submit_form(elt)
@@ -125,17 +132,23 @@ class Browser:
             tree = self.cached_tree
         else:
             self.cached_tree = tree
+        
+        self.timer.start("Style")
         style(tree, None, self.rules)
+
+        self.timer.start("Layout")
         self.document = DocumentLayout(tree)
         self.document.layout(width=self.width)
         self.max_y = self.document.h
 
+        self.timer.start("Display List")
         self.display_list = []
         self.document.draw(self.display_list)
         self.render()
     
     def render(self):
         self.canvas.delete("all")
+        self.timer.start("Rendering")
         for cmd in self.display_list:
             if cmd.y1 > self.scroll + self.height - 60:
                 continue
@@ -143,6 +156,7 @@ class Browser:
                 continue
             cmd.draw(self.scroll - 60, self.canvas)
 
+        self.timer.start("Chrome")
         self.canvas.create_rectangle(0, 0, 800, 60, width=0, fill='light gray')
     
         self.canvas.create_rectangle(50, 10, 790, 50)
@@ -151,6 +165,7 @@ class Browser:
 
         self.canvas.create_rectangle(10, 10, 35, 50)
         self.canvas.create_polygon(15, 30, 30, 15, 30, 45, fill='black')
+        self.timer.stop()
 
         if self.focus == "address bar":
             w = font.measure(self.address_bar)
@@ -165,19 +180,24 @@ class Browser:
         self.address_bar = url
         self.url = url
         self.history.append(url)
+        self.timer.start("Downloading")
         header, body = request(url, body)
+        self.timer.start("Parsing HTML")
         self.nodes = parse(lex(body))
 
+        self.timer.start("Parsing CSS")
         with open("browser/src/browser.css") as f:
             browser_style = f.read()
             rules = CSSParser(browser_style).parse()
         for link in find_links(self.nodes, []):
             header, body = request(relative_url(link, url))
             rules.extend(CSSParser(body).parse())
-        
+
         # tree_to_string(self.nodes)
         rules.sort(key=lambda selector_body: selector_body[0].priority(), reverse=True)
         self.rules = rules
+
+        self.timer.start("Running JS")
         self.setup_js()
         for script in find_scripts(self.nodes, []):
             header, body = request(relative_url(script, self.history[-1]))
@@ -186,6 +206,8 @@ class Browser:
                 self.js_environment.evaljs(body)
             except dukpy.JSRuntimeError as e:
                 print("Script", script, "crashed", e)
+
+        print("Layout called from load")
         self.layout(self.nodes)
     
     def go_back(self):
@@ -230,6 +252,7 @@ class Browser:
         elt.children = new_nodes
         for child in elt.children:
             child.parent = elt
+        print("Layout called from js_innerHTML")
         self.layout(self.nodes)
 
     def dispatch_event(self, type, elt):
