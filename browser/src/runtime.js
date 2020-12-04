@@ -41,3 +41,7 @@ function Event(type) {
 Event.prototype.preventDefault = function() {
     this.do_default = false;
 }
+
+Object.defineProperty(document, 'cookie', {
+    get: function() { return call_python("cookie"); }
+})

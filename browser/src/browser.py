@@ -37,6 +37,7 @@ class Browser:
         self.address_bar = ""
         self.timer = Timer()
         self.cookies = {}
+        # self.cookies["username"] = "nameless" # Test of security
 
         # http://www.zggdwx.com/
     
@@ -184,8 +185,10 @@ class Browser:
             self.canvas.create_line(x, y, x, y + self.focus.h)
     
     def cookie_string(self):
+        origin = url_origin(self.history[-1])
+        cookies = self.cookies.get(origin, {})
         cookie_string = ""
-        for key, value in self.cookies.items():
+        for key, value in cookies.items():
             cookie_string += "&" + key + "=" + value
         return cookie_string[1:]
 
@@ -200,6 +203,9 @@ class Browser:
             kv, *params = headers["set-cookie"].split(";")
             key, value = kv.split("=", 1)
             self.cookies[key] = value
+            print(f"Received Cookie key={key}, value={value}")
+            origin = url_origin(self.history[-1])
+            self.cookies.setdefault(origin, {})[key] = value
         self.timer.start("Parsing HTML")
         self.nodes = parse(lex(body))
 
@@ -242,8 +248,18 @@ class Browser:
         self.js_environment.export_function("querySelectorAll", self.js_querySelectorAll)
         self.js_environment.export_function("getAttribute", self.js_getAttribute)
         self.js_environment.export_function("innerHTML", self.js_innerHTML)
+        self.js_environment.export_function("cookie", self.js_cookie)
         with open("browser/src/runtime.js") as f:
             self.js_environment.evaljs(f.read())
+    
+    def js_cookie(self):
+        origin = url_origin(self.history[-1])
+        cookies = self.cookies.get(origin, {})
+
+        cookie_string = ""
+        for key, value in cookies.items():
+            cookie_string += "&" + key + "=" + value
+        return cookie_string[1:]
 
     def js_querySelectorAll(self, sel):
         selector, _ = CSSParser(sel + "{").selector(0)
@@ -294,6 +310,17 @@ def layout_for_node(tree, node):
     for child in tree.children:
         out = layout_for_node(child, node)
         if out: return out
+
+def url_origin(url):
+    host, port, path = parse_url(url)
+    return (host, port)
+
+def parse_url(url):
+    url = url.split("://")[-1]
+    host, url = url.split(":", 1)
+    port, path = url.split("/", 1)
+    path = "/" + path
+    return host, port, path
 
         
 INHERITED_PROPERTIES = {

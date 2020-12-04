@@ -1,5 +1,9 @@
 import socket
 import sys
+import random
+
+TOKENS = {}
+NONCES = {}
 
 def handle_connection(conx):
     # Read the Opening Lines
@@ -55,28 +59,43 @@ ENTRIES = [
 ]
 
 def show_comments(username):
+
     out = """
     <!doctype html><html>
     <script src=/comment.js></script>
     <link rel=stylesheet href=/comment.css>"""
     if username:
+        nonce = str(random.random())[2:]
+        NONCES[username] = nonce
         out += """
         <form action=add method=post>
             <p>Message:<input name=guest></p>
-            <p><button>Sign the book!</button></p>
-        </form>"""
+            <p><button>Sign the book!</button></p>"""
+        out += "<p><input name=nonce type=hidden value=" + nonce + "></p>"
+
+        out += "</form>"
     else:
         out += "<p><a href=/login>Log in to add to the guest list</a></p>"
 
     out += "<p id=errors></p>"
+    out += "<p><a href=/clear>Clear Guestbook</a></p>"
 
     for entry, who in ENTRIES:
+        if not who:
+            who = "unknown"
+        if not entry:
+            entry = "missing entry"
+
+        # Escape the user input
+        entry = entry.replace("&", "&amp;").replace("<", "&lt;")
         out += '<p>' + entry + " <i>from " + who + '</i></p>'
     return out
 
 
 def add_entry(params, username):
-    if 'guest' in params and len(params['guest']) <= 100:
+    if 'nonce' not in params or params['nonce'] != NONCES.get(username):
+        return "Invalid nonce"
+    if 'guest' in params and len(params['guest']) <= 200:
         ENTRIES.append((params['guest'], username))
     return show_comments(username)
 
@@ -86,20 +105,27 @@ def handle_request(method, url, headers, body):
     out = ""
     username = None
     if "cookie" in headers:
-        username = parse_cookies(headers["cookie"]).get("username")
+        token = parse_cookies(headers["cookie"]).get("token")
+        username = TOKENS.get(token)
     
     if method == "POST":
         params = form_decode(body)
         if url == "/":
             if check_login(params.get("username"), params.get("password")):
                 username = params["username"]
-                resp_headers["Set-Cookie"] = "username=" + username
+                token = str(random.random())[2:]
+                TOKENS[token] = username
+                resp_headers["Set-Cookie"] = "token=" + token
             out = show_comments(username)
         elif url == '/add':
             out = add_entry(params, username)
         else:
             out = show_comments(username)
     else:
+        if url == "/clear":
+            print("Clearing the guestbook entries")
+            ENTRIES.clear()
+            out = show_comments(username)
         if url == "/login":
             with open("login.html") as f:
                 out = f.read()
